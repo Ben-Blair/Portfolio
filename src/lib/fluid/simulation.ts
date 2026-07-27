@@ -116,6 +116,32 @@ class Program {
   }
 }
 
+/**
+ * Hue anchors the palette cycles through, in the order it walks them.
+ *
+ * A raw 0..1 hue sweep spends a big chunk of its range in yellow-olive, which looks acidic
+ * against white and is the one thing that made this read as "generated gradient" rather than
+ * spilled ink. These anchors skip that band entirely and stay in the pink / peach / mint /
+ * sky / lavender family.
+ */
+const HUE_ANCHORS = [0.95, 0.03, 0.08, 0.42, 0.48, 0.57, 0.7, 0.83];
+
+/** Walks the anchors above, interpolating between neighbours so colours still blend. */
+function paletteHue(t: number): number {
+  const scaled = (t % 1) * HUE_ANCHORS.length;
+  const index = Math.floor(scaled);
+  const frac = scaled - index;
+
+  const a = HUE_ANCHORS[index % HUE_ANCHORS.length];
+  const b = HUE_ANCHORS[(index + 1) % HUE_ANCHORS.length];
+
+  // Interpolate the short way around the colour wheel.
+  let delta = b - a;
+  if (delta > 0.5) delta -= 1;
+  if (delta < -0.5) delta += 1;
+  return (a + delta * frac + 1) % 1;
+}
+
 function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
   const i = Math.floor(h * 6);
   const f = h * 6 - i;
@@ -525,7 +551,7 @@ export class FluidSimulation {
 
   /** A splat using the current drifting hue, scaled by `intensity`. */
   splatWithCurrentHue(x: number, y: number, dx: number, dy: number, intensity = 1) {
-    const [r, g, b] = hsvToRgb(this.hue, this.config.SATURATION, this.config.VALUE);
+    const [r, g, b] = hsvToRgb(paletteHue(this.hue), this.config.SATURATION, this.config.VALUE);
     const k = this.config.SPLAT_INTENSITY * intensity;
     this.splat(x, y, dx, dy, [r * k, g * k, b * k]);
   }
@@ -542,7 +568,7 @@ export class FluidSimulation {
       const x = 0.12 + Math.random() * 0.76;
       const y = 0.15 + Math.random() * 0.7;
       const angle = Math.random() * Math.PI * 2;
-      const force = 25 + Math.random() * 55;
+      const force = 140 + Math.random() * 260;
       this.hue = (this.hue + 0.16) % 1;
       this.splatWithCurrentHue(x, y, Math.cos(angle) * force, Math.sin(angle) * force, 1.15);
     }
@@ -627,7 +653,7 @@ export class FluidSimulation {
     const y = 0.1 + Math.random() * 0.8;
     const angle = Math.random() * Math.PI * 2;
     // Same texel-unit caveat as seed(): keep ambient drift gentle.
-    const force = 30 + Math.random() * 60;
+    const force = 120 + Math.random() * 220;
     this.splatWithCurrentHue(
       x,
       y,
@@ -823,6 +849,12 @@ export class FluidSimulation {
     pointer.deltaY = (pointer.texcoordY - pointer.prevTexcoordY) * (aspect > 1 ? 1 / aspect : 1);
 
     if (Math.abs(pointer.deltaX) === 0 && Math.abs(pointer.deltaY) === 0) return;
+
+    // Nudge the hue along with the gesture, not just with time. Time-only drift means every
+    // splat in one fast stroke gets nearly the same colour, and you end up painting a single
+    // flat slab of green instead of a wash where several hues meet and blend.
+    const travelled = Math.hypot(pointer.deltaX, pointer.deltaY);
+    this.hue = (this.hue + travelled * 0.9) % 1;
 
     const force = this.config.SPLAT_FORCE;
     this.splatWithCurrentHue(

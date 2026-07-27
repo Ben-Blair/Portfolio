@@ -39,17 +39,17 @@ export const FLUID_CONFIG: FluidConfig = {
   SIM_RESOLUTION: 128,
 
   /** Resolution of the *color* field. This is what you actually see, so it's higher. */
-  DYE_RESOLUTION: 1024,
+  DYE_RESOLUTION: 1440,
 
   /**
    * How fast color fades. Roughly, dye decays to 1/e of its brightness every 1/this seconds,
    * so 0.32 means a trail is still clearly visible ~3s after you draw it and gone by ~10s.
    * Push it up if the hero starts feeling muddy; push it down for longer-lived streaks.
    */
-  DENSITY_DISSIPATION: 0.32,
+  DENSITY_DISSIPATION: 0.16,
 
   /** How fast motion dies down. Higher = the fluid settles instead of churning forever. */
-  VELOCITY_DISSIPATION: 0.15,
+  VELOCITY_DISSIPATION: 0.04,
 
   /** Jacobi iterations for the pressure solve. More = less divergence, more GPU. 20 is the sweet spot. */
   PRESSURE_ITERATIONS: 20,
@@ -58,25 +58,25 @@ export const FLUID_CONFIG: FluidConfig = {
   PRESSURE: 0.8,
 
   /** Vorticity confinement strength — this is what makes the curls. Turn to 0 for a boring smear. */
-  CURL: 26,
+  CURL: 55,
 
   /** Size of the blob injected at the cursor, as a fraction of the canvas. */
-  SPLAT_RADIUS: 0.2,
+  SPLAT_RADIUS: 0.19,
 
   /** How hard a cursor move shoves the fluid. */
-  SPLAT_FORCE: 5200,
+  SPLAT_FORCE: 7000,
 
   /** Multiplier on how bright injected dye is. Lower on light backgrounds. */
-  SPLAT_INTENSITY: 0.55,
+  SPLAT_INTENSITY: 0.42,
 
   /** Overall opacity of the whole canvas. The content has to stay readable on top of it. */
-  OPACITY: 0.74,
+  OPACITY: 0.95,
 
   /** Contrast of the dye against white. Above ~1.6 it starts to look like paint, not vapor. */
-  INTENSITY: 1.0,
+  INTENSITY: 1.15,
 
   /** How far each color sits from white. 0 = invisible, 1 = fully saturated. */
-  PASTEL: 0.82,
+  PASTEL: 0.68,
 
   /** Cap on device pixel ratio for the canvas. The dye is soft; nobody can tell it's not 3x. */
   MAX_DPR: 1.5,
@@ -85,19 +85,19 @@ export const FLUID_CONFIG: FluidConfig = {
    * Hue range (0-1) that splat colors are sampled from, cycling slowly over time so a long
    * session doesn't stay one color. The reference site drifts through pinks, greens and blues.
    */
-  HUE_DRIFT_SPEED: 0.06,
-  SATURATION: 0.62,
+  HUE_DRIFT_SPEED: 0.09,
+  SATURATION: 0.55,
   VALUE: 1.0,
 
   /** Idle drift: occasional automatic splats so the hero isn't dead before you touch it. */
   AMBIENT_SPLATS: true,
   /** Seconds between ambient splats. */
-  AMBIENT_INTERVAL: 2.2,
+  AMBIENT_INTERVAL: 1.6,
   /** Ambient splats are gentler than cursor ones. */
-  AMBIENT_SCALE: 0.35,
+  AMBIENT_SCALE: 0.5,
 
   /** Splats fired once on load so the hero has color before any interaction. */
-  INITIAL_SPLATS: 9,
+  INITIAL_SPLATS: 16,
 };
 
 /** Halved sim/dye resolution and no ambient splats on small or low-power devices. */

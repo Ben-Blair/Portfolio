@@ -284,10 +284,12 @@ void main() {
   float amount = max(dye.r, max(dye.g, dye.b));
   vec3 hue = amount > 0.0001 ? dye / amount : vec3(1.0);
 
-  // Slightly compress the top end so dense cores don't flatten into solid color, but keep
-  // the response near-linear down low — faint wisps are most of what you actually see.
+  // Roll the response off gently. An earlier version used 1 - pow(1 - a, 1.6), which lifts
+  // low values hard — every wisp slammed to full strength and the hero turned into flat
+  // blocks of colour. Raising alpha to a power above 1 does the opposite: faint stays faint,
+  // and only genuinely dense dye reads strongly, which is what keeps it looking like vapour.
   float alpha = clamp(amount * uIntensity, 0.0, 1.0);
-  alpha = 1.0 - pow(1.0 - alpha, 1.6);
+  alpha = pow(alpha, 1.1);
 
   vec3 color = mix(vec3(1.0), hue, uPastel);
 
