@@ -1,0 +1,29 @@
+---
+title: Face Filterer
+tagline: Drop in a folder of photos, get back every shot containing a specific person.
+date: 2025-02-15
+featured: false
+order: 6
+status: Shipped
+accent: "#a21caf"
+tags: [Computer Vision, Face Recognition, Python, OpenCV, Desktop GUI]
+cover: /media/face-filterer/cover.svg
+links:
+  - { label: GitHub, href: "https://github.com/Ben-Blair" }
+media:
+  - type: image
+    src: /media/face-filterer/cover.svg
+    alt: Face Filterer GUI
+    caption: "TODO: replace with a screenshot of the app mid-scan."
+---
+
+A desktop tool for the specific misery of having four thousand photos from an event and needing the
+two hundred with one particular person in them.
+
+You drag a folder onto the window, give it a face to look for, and it works through the pile with
+`face_recognition` over OpenCV, previewing matches in real time and zipping up the results at the
+end. Progress tracking mattered more than I expected — a face-recognition pass over thousands of
+full-resolution images takes long enough that a frozen window reads as a crash.
+
+Built with Tkinter and `tkinterdnd2` for drag-and-drop, Pillow for the previews. Not glamorous, but
+it's the project of mine that non-programmers have actually asked to use.

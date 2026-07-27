@@ -1,0 +1,51 @@
+---
+title: Splat Pipeline
+tagline: Video or photos in, a trained 3D Gaussian splat out — all on Apple Silicon.
+date: 2026-05-20
+featured: true
+order: 3
+status: Actively using it
+accent: "#c2410c"
+tags: [Gaussian Splatting, COLMAP, MLX, Python, Photogrammetry, LiDAR]
+cover: /media/splat-pipeline/cover.svg
+links:
+  - { label: GitHub, href: "https://github.com/Ben-Blair" }
+media:
+  - type: image
+    src: /media/splat-pipeline/cover.svg
+    alt: Pipeline stages from capture to splat
+    caption: "TODO: swap for a real side-by-side — input photo on the left, trained splat on the right."
+---
+
+Every splat on this site came out of this. It's the boring infrastructure that makes the fun stuff
+possible: point it at a video file or a folder of photos, and it hands back a trained `.ply` you
+can drop straight into a browser.
+
+```bash
+make all VIDEO=~/Movies/clip.mp4
+make photos-quality PHOTOS_DIR=~/Pictures/scene
+make hdr-photos PHOTOS_DIR=~/Pictures/brackets
+```
+
+## What's actually happening
+
+**COLMAP** solves camera poses — where the camera was for every frame — which is the part that
+quietly determines whether the final result is crisp or mush. Then the Gaussians get trained against
+those poses, natively on Apple Silicon via MLX rather than falling back to CPU or renting a GPU.
+
+The parts that took the most iteration weren't the training, they were everything around it:
+
+- **Frame selection.** Dumping every frame of a video into COLMAP is slow and often *worse* — near
+  duplicates add time without adding parallax. Sampling matters.
+- **Resolution policy.** Fine detail like grass and foliage falls apart if you downscale before
+  feature extraction, so the quality path imports at full resolution and runs COLMAP features at
+  3200px.
+- **HDR brackets**, for scenes where a single exposure clips the windows or crushes the shadows.
+
+## The LiDAR variant
+
+A second pipeline adds iPhone LiDAR depth as a regularizer during training. Pure photometric
+splatting produces beautiful detail and *terrible* flat walls — they come out lumpy, because
+nothing in the loss function knows a wall is planar. Feeding in depth, plus a planar pruning pass,
+fixes the walls without costing the detail elsewhere. On a 16 GB M2 that combination is what makes
+the difference between a scan that looks like a room and one that looks like a cloud.

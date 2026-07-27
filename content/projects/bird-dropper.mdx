@@ -1,0 +1,31 @@
+---
+title: Bird Dropper
+tagline: A cloud-ready full-stack app for tracking bird sightings, containerized and deployed.
+date: 2025-05-01
+featured: false
+order: 5
+status: Shipped
+accent: "#0369a1"
+tags: [Node.js, PostgreSQL, Docker, REST APIs, Full-Stack]
+cover: /media/bird-dropper/cover.svg
+links:
+  - { label: GitHub, href: "https://github.com/Ben-Blair" }
+media:
+  - type: image
+    src: /media/bird-dropper/cover.svg
+    alt: Bird Dropper interface
+    caption: "TODO: replace with a screenshot of the sightings feed."
+---
+
+A full-stack web app for logging and sharing bird sightings — user accounts, photo uploads, and an
+interactive feed of what people have spotted.
+
+The interesting constraint was treating it like something that had to actually run somewhere rather
+than a demo on localhost. That meant REST APIs designed to be scaled rather than to be convenient,
+Postgres schemas that wouldn't need rewriting the first time a feature landed, secure auth, and
+media stored in the cloud instead of on the box.
+
+It's containerized with Docker and deployed to Render, which forced every environment assumption out
+into config where it belongs. Most of what I learned here was operational: the gap between "it works
+on my machine" and "it works when someone else runs it" is almost entirely about the things you
+didn't write down.

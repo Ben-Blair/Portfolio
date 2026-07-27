@@ -1,0 +1,51 @@
+---
+title: Real-Time Video Monitoring & Detection
+tagline: An anomaly-detection model that runs on a Raspberry Pi and tells you whether the bed is made.
+date: 2026-03-01
+featured: true
+order: 1
+status: Running on a Pi in my room
+accent: "#0f766e"
+tags: [Computer Vision, PyTorch, Anomalib, OpenCV, Raspberry Pi, Edge ML]
+cover: /media/video-monitoring/cover.svg
+links:
+  - { label: GitHub, href: "https://github.com/Ben-Blair" }
+media:
+  - type: image
+    src: /media/video-monitoring/cover.svg
+    alt: Detection pipeline diagram
+    caption: "TODO: replace with a real frame from the pipeline — a detection overlay screenshot reads best here."
+---
+
+A real-time video pipeline that watches a live camera feed, finds what it cares about, and decides
+whether what it's looking at is *normal*.
+
+It started as straightforward object detection — Haar Cascade classifiers over an OpenCV capture
+loop, with a lot of preprocessing tuning to get reliable hits under changing light. The interesting
+part came second: swapping "is there a thing here" for "does this look right," using **PatchCore**
+via Anomalib on top of PyTorch. The concrete test case was a bed. Made, or not made?
+
+That turns out to be a genuinely good anomaly-detection problem. There's no clean bounding box to
+draw, the difference is textural, and "unmade" has infinite variations while "made" has only a few.
+So the model learns what made looks like and scores everything by how far it deviates.
+
+## Getting it onto a Pi
+
+Training on a laptop is one thing; inference on a Raspberry Pi is another. The work there was:
+
+- Collecting and labeling my own dataset, since nothing off the shelf covers this.
+- Feature extraction and threshold calibration so the anomaly score maps onto an actual decision
+  rather than a number nobody can interpret.
+- Trimming the inference path to fit the Pi's memory and CPU budget.
+- Encrypting the video stream in transit and at rest — it's a camera in a bedroom, so that isn't
+  optional.
+
+## Structure
+
+I split it into data ingestion, preprocessing, inference, and alerting as separate modules. That
+sounds like over-engineering for a personal project until you're three weeks in trying to work out
+whether a bad result came from the camera, the crop, or the model. Being able to test each stage on
+its own is what made it debuggable.
+
+A later version added a two-run confirmation step: it only alerts when two consecutive checks agree,
+which killed nearly all of the false positives from someone just walking through frame.
