@@ -201,4 +201,3 @@ project's environment variables.
 One thing to know first: `public/splats/` holds a ~10 MB binary. That's fine for GitHub, but if
 you add several more scans, move them to Git LFS or object storage rather than letting the repo
 balloon.
-# Portfolio
