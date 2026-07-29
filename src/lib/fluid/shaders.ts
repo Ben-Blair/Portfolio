@@ -259,42 +259,59 @@ void main() {
 `;
 
 /**
- * The light-theme display pass, and the main departure from the usual black-background
- * fluid sim.
+ * The display pass, kept deliberately identical to the upstream WebGL-Fluid-Simulation one
+ * (PavelDoGreat/WebGL-Fluid-Simulation, `displayShaderSource`) minus the bloom and sunrays
+ * branches, which need extra framebuffers we don't allocate.
  *
- * The dye texture holds additive color that was designed to glow on black. Rendering that
- * straight onto white gives you mud. Instead: read the dye's magnitude as *alpha*, take its
- * hue, and push that hue most of the way back toward white. The canvas then composites over
- * the page's white background, so color reads as a translucent pastel tint rather than paint.
+ * The important line is the last one. Writing `vec4(c, max(c.rgb))` emits **premultiplied**
+ * alpha: every channel is already scaled by the coverage it represents. That is what makes
+ * the color read correctly on a light page, and it is worth spelling out why, because the
+ * obvious-looking alternative is wrong.
+ *
+ * Where two different hues overlap, the dye buffer *sums* them. Normalising that sum back to
+ * a hue (`dye / max(dye)`) turns red+green+blue into grey, so overlaps composite as brown mud
+ * on white. Premultiplied output instead lets an overlap resolve as `c + (1 - a) * white`, so
+ * summed hues wash out toward *white* — a bright highlight rather than dirt. Same reason
+ * upstream's colors look clean; it just gets there over black instead.
+ *
+ * This requires the canvas context to be created with `premultipliedAlpha: true`.
  */
 export const DISPLAY_FRAG = /* glsl */ `#version 300 es
 precision highp float;
 precision highp sampler2D;
 
 in vec2 vUv;
+in vec2 vL;
+in vec2 vR;
+in vec2 vT;
+in vec2 vB;
 out vec4 fragColor;
 uniform sampler2D uTexture;
-uniform float uIntensity;
+uniform vec2 uTexelSize;
 uniform float uOpacity;
-uniform float uPastel;
+uniform float uShading;
 
 void main() {
-  vec3 dye = texture(uTexture, vUv).rgb;
+  vec3 c = texture(uTexture, vUv).rgb;
 
-  float amount = max(dye.r, max(dye.g, dye.b));
-  vec3 hue = amount > 0.0001 ? dye / amount : vec3(1.0);
+  // Fake a light pointing out of the screen, shaded by the dye's own gradient. This is what
+  // gives a ribbon a lit edge and a darker flank instead of a flat wash of tint.
+  vec3 lc = texture(uTexture, vL).rgb;
+  vec3 rc = texture(uTexture, vR).rgb;
+  vec3 tc = texture(uTexture, vT).rgb;
+  vec3 bc = texture(uTexture, vB).rgb;
 
-  // Roll the response off gently. An earlier version used 1 - pow(1 - a, 1.6), which lifts
-  // low values hard — every wisp slammed to full strength and the hero turned into flat
-  // blocks of colour. Raising alpha to a power above 1 does the opposite: faint stays faint,
-  // and only genuinely dense dye reads strongly, which is what keeps it looking like vapour.
-  float alpha = clamp(amount * uIntensity, 0.0, 1.0);
-  alpha = pow(alpha, 1.1);
+  float dx = length(rc) - length(lc);
+  float dy = length(tc) - length(bc);
 
-  vec3 color = mix(vec3(1.0), hue, uPastel);
+  vec3 n = normalize(vec3(dx, dy, length(uTexelSize)));
+  float diffuse = clamp(dot(n, vec3(0.0, 0.0, 1.0)) + 0.7, 0.7, 1.0);
+  c *= mix(1.0, diffuse, uShading);
 
-  // Written straight to the drawing buffer with blending off; the browser composites this
-  // canvas over the page's white background using the alpha below.
-  fragColor = vec4(color, alpha * uOpacity);
+  float a = max(c.r, max(c.g, c.b));
+
+  // Scaling color and alpha together keeps the output premultiplied, so OPACITY fades the
+  // effect out without shifting its hue.
+  fragColor = vec4(c, a) * uOpacity;
 }
 `;

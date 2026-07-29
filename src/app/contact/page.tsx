@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ArrowUpRight, Mail } from "lucide-react";
 
+import { BackHome } from "@/components/site/BackHome";
 import { profile } from "@content/profile";
 
 export const metadata: Metadata = {
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <div className="mx-auto max-w-2xl px-5 py-24">
-      <h1 className="font-display text-[clamp(2.25rem,6vw,3.25rem)] font-extrabold leading-none tracking-[-0.04em]">
+      <BackHome />
+
+      <h1 className="mt-8 font-display text-[clamp(2.25rem,6vw,3.25rem)] font-extrabold leading-none tracking-[-0.04em]">
         Get in touch
       </h1>
 
@@ -27,7 +30,8 @@ export default function ContactPage() {
 
       <a
         href={`mailto:${profile.email}`}
-        className="mt-8 inline-flex items-center gap-2.5 rounded-full bg-neutral-900 px-6 py-3.5 text-[15px] font-medium text-white transition-opacity hover:opacity-90"
+        className="glass-dark mt-8 inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 text-[15px] font-medium text-white"
+        data-glass
       >
         <Mail className="size-4" />
         {profile.email}

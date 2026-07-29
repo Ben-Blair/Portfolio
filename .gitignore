@@ -45,6 +45,8 @@ next-env.d.ts
 .cursor/
 .claude/settings.local.json
 .vscode/settings.json
+CLAUDE.md
+AGENTS.md
 
 # scratch
 /scratch

@@ -130,6 +130,172 @@
     @apply font-sans;
   }
 }
+@layer components {
+  /*
+    Liquid glass.
+
+    Three things stacked: a thin tinted fill, a graded specular rim, and a backdrop filter that
+    bends and boosts whatever is behind it. `GlassLayer` supplies `--glass-filter` — a
+    per-element SVG displacement filter sized to the element — to anything marked `data-glass`.
+
+    The `backdrop-filter` is declared twice on purpose. Chromium takes the second; Safari and
+    Firefox can't parse an SVG filter reference there, throw the whole declaration out, and land
+    on the first. They get the frost and the colour lift without the warp.
+
+    The two blur values differ on purpose, and the difference is the whole point.
+
+    Blur and refraction are in direct competition: the refraction works by displacing the
+    backdrop a few pixels, and a blur wide enough to cross that distance averages the difference
+    straight back out. Against a hard-edged test pattern, `blur(6px)` erased the lensing
+    completely — the surface read as a frosted panel with no warp at all, whatever the
+    displacement was set to. So the Chromium line, which has the displacement, stays close to
+    clear. Real glass this thick is fairly clear anyway.
+
+    The fallback line has no displacement to protect, so it keeps a proper frost — otherwise
+    Safari and Firefox would get a nearly invisible pane instead of a surface.
+
+    The saturate/brightness/contrast trio is the important part on this site. The hero's fluid
+    runs at OPACITY 0.28 because the headline sits on top of it, and it clears a second or two
+    after the cursor leaves — so what these surfaces sample is pale and often nearly white, and
+    bending a near-white field just gives you a near-white field. Rather than turn the whole
+    background up and cost the headline its contrast, the material pulls what it samples back
+    into range itself. Blur also desaturates, so some of the `saturate` is just paying that back.
+  */
+  .glass,
+  .glass-dark {
+    position: relative;
+    backdrop-filter: blur(8px) saturate(1.9) brightness(1.06) contrast(1.08);
+    backdrop-filter: var(--glass-filter, blur(0px)) blur(1.5px) saturate(1.9) brightness(1.06)
+      contrast(1.08);
+    transition:
+      box-shadow 0.2s,
+      background-color 0.2s,
+      transform 0.2s;
+  }
+
+  /*
+    The specular rim.
+
+    A 1px ring whose brightness runs around the edge instead of sitting flat on it: strong at the
+    top left where light lands, almost gone through the middle, strong again at the bottom right
+    where it leaves. Uniform inset shadows — what this replaces — read as an outline drawn around
+    a shape. This reads as a lit edge, which is most of what makes the surface look thick.
+
+    Built as a padding box with its own interior masked away, so it follows `border-radius`
+    whatever the call site sets, including `rounded-full`.
+  */
+  .glass::before,
+  .glass-dark::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  .glass::before {
+    background: linear-gradient(
+      145deg,
+      rgb(255 255 255 / 0.95) 0%,
+      rgb(255 255 255 / 0.25) 30%,
+      rgb(255 255 255 / 0.06) 50%,
+      rgb(255 255 255 / 0.4) 72%,
+      rgb(255 255 255 / 0.9) 100%
+    );
+  }
+
+  .glass-dark::before {
+    background: linear-gradient(
+      145deg,
+      rgb(255 255 255 / 0.34) 0%,
+      rgb(255 255 255 / 0.1) 30%,
+      rgb(255 255 255 / 0.03) 50%,
+      rgb(255 255 255 / 0.14) 72%,
+      rgb(255 255 255 / 0.3) 100%
+    );
+  }
+
+  /*
+    The tint is low on purpose — it is the single thing most responsible for these reading as
+    "white at 50%" rather than as glass. Everything the backdrop filter does is wasted under an
+    opaque-ish fill. Don't push it back up without checking `text-neutral-700` labels against the
+    palest part of the page backdrop.
+
+    The dark hairline is doing the job `border-neutral-200` used to. Without it these read as
+    floating blobs anywhere the background behind them is pale — which is most of the site, and
+    the hero too whenever the fluid has settled. The white inset shadows that used to sit here
+    are gone; `::before` above does that job with a gradient instead of flatly.
+  */
+  .glass {
+    background-color: rgb(255 255 255 / 0.16);
+    box-shadow:
+      inset 0 0 0 1px rgb(0 0 0 / 0.11),
+      0 4px 14px rgb(0 0 0 / 0.07);
+  }
+
+  .glass:hover {
+    background-color: rgb(255 255 255 / 0.24);
+    box-shadow:
+      inset 0 0 0 1px rgb(0 0 0 / 0.16),
+      0 6px 20px rgb(0 0 0 / 0.1);
+  }
+
+  /*
+    Primary actions. Opaque enough that white text clears 4.5:1 over the lightest part of the
+    hero's pastel wash — don't lower this alpha without re-checking that.
+  */
+  .glass-dark {
+    background-color: rgb(24 24 27 / 0.82);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.16);
+  }
+
+  .glass-dark:hover {
+    background-color: rgb(24 24 27 / 0.9);
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.2);
+  }
+
+  /* Transparency is the whole effect, so there's nothing to soften — go solid instead. */
+  @media (prefers-reduced-transparency: reduce) {
+    .glass,
+    .glass-dark {
+      backdrop-filter: none;
+    }
+    /* A specular rim on an opaque pill is just noise — there's no glass left for it to light. */
+    .glass::before,
+    .glass-dark::before {
+      display: none;
+    }
+    .glass,
+    .glass:hover {
+      background-color: rgb(255 255 255 / 0.95);
+      box-shadow:
+        inset 0 0 0 1px rgb(0 0 0 / 0.11),
+        0 4px 14px rgb(0 0 0 / 0.07);
+    }
+    .glass-dark,
+    .glass-dark:hover {
+      background-color: rgb(24 24 27);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .glass,
+    .glass-dark {
+      transition: none;
+    }
+  }
+}
+
 @layer base {
   /*
     Scroll snapping on /projects is a nice nudge with a mouse wheel or trackpad, but on a
@@ -142,8 +308,8 @@
     }
   }
 
-  /* Anchor jumps from the project rail shouldn't hide the heading under the sticky nav. */
+  /* Anchor jumps from the project rail shouldn't land flush against the viewport edge. */
   :target {
-    scroll-margin-top: 5rem;
+    scroll-margin-top: 1rem;
   }
 }

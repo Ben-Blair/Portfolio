@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Download, ExternalLink } from "lucide-react";
 
+import { BackHome } from "@/components/site/BackHome";
 import { Separator } from "@/components/ui/separator";
 import { profile } from "@content/profile";
 import { resume } from "@content/resume";
@@ -19,7 +20,9 @@ export const metadata: Metadata = {
 export default function ResumePage() {
   return (
     <div className="mx-auto max-w-3xl px-5 py-16">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <BackHome />
+
+      <header className="mt-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-[clamp(2.25rem,6vw,3.25rem)] font-extrabold leading-none tracking-[-0.04em]">
             Resume
@@ -33,7 +36,8 @@ export default function ResumePage() {
           <a
             href={resume.pdf}
             download={resume.downloadAs}
-            className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-4 py-2.5 text-[13.5px] font-medium text-white transition-opacity hover:opacity-90"
+            className="glass-dark inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[13.5px] font-medium text-white"
+            data-glass
           >
             <Download className="size-3.5" />
             Download PDF
@@ -42,7 +46,8 @@ export default function ResumePage() {
             href={resume.pdf}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-4 py-2.5 text-[13.5px] font-medium text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+            className="glass inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[13.5px] font-medium text-neutral-700"
+            data-glass
           >
             <ExternalLink className="size-3.5 text-neutral-400" />
             Open

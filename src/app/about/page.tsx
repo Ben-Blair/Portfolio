@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
+import { BackHome } from "@/components/site/BackHome";
 import { getAllTags } from "@/lib/content";
 import { profile } from "@content/profile";
 import { resume } from "@content/resume";
@@ -17,7 +18,9 @@ export default function AboutPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-16">
-      <div className="flex flex-col-reverse items-start gap-8 sm:flex-row sm:items-center sm:justify-between">
+      <BackHome />
+
+      <div className="mt-8 flex flex-col-reverse items-start gap-8 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-[clamp(2.25rem,6vw,3.25rem)] font-extrabold leading-none tracking-[-0.04em]">
             About me
@@ -82,13 +85,15 @@ export default function AboutPage() {
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href="/projects"
-            className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-5 py-2.5 text-[14px] font-medium text-white transition-opacity hover:opacity-90"
+            className="glass-dark inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[14px] font-medium text-white"
+            data-glass
           >
             See the projects
           </Link>
           <Link
             href="/resume"
-            className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-[14px] font-medium text-neutral-700 transition-colors hover:border-neutral-300"
+            className="glass inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[14px] font-medium text-neutral-700"
+            data-glass
           >
             Read the resume
           </Link>

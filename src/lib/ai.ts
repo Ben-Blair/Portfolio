@@ -1,4 +1,5 @@
-import { google } from "@ai-sdk/google";
+import { google, type GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
+import { APICallError, RetryError } from "ai";
 
 import { getProjects } from "@/lib/content";
 import { profile } from "@content/profile";
@@ -17,6 +18,57 @@ import { resume } from "@content/resume";
  */
 export const CHAT_MODEL_ID = "gemini-3.5-flash";
 export const chatModel = () => google(CHAT_MODEL_ID);
+
+/**
+ * Passed to `streamText` in the chat route. Provider-specific, so it lives here with the model
+ * rather than in the route.
+ *
+ * Gemini 3.x flash thinks by default, and here it's mostly waste. Every answer comes from facts
+ * already sitting in the system prompt, so there's nothing to reason about — measured twice on
+ * "what projects have you built?", the default burned ~450 thinking tokens to produce a ~70-token
+ * answer. "minimal" produced the same answer with zero.
+ *
+ * The saved tokens are the whole benefit. This does NOT make replies arrive faster: measured
+ * three times against the streaming endpoint, time-to-first-word was 13.2/10.9/20.9s thinking
+ * vs 9.7/10.2/28.9s not — noise, no trend. Whatever makes this model slow, it isn't thinking,
+ * so look at the model choice before touching this knob again.
+ *
+ * Raise this to "low"/"medium"/"high" if the chat ever grows tools or multi-step work worth
+ * reasoning over.
+ */
+export const CHAT_PROVIDER_OPTIONS = {
+  google: {
+    thinkingConfig: { thinkingLevel: "minimal" },
+  } satisfies GoogleGenerativeAIProviderOptions,
+};
+
+/**
+ * Turns a provider failure into something a visitor should actually read.
+ *
+ * Passed to `toUIMessageStreamResponse`, which otherwise masks every mid-stream error as a
+ * generic string so server details can't leak. That default is right, but it made a daily-quota
+ * 429 — the single most likely failure on the free tier, and one the visitor can do nothing
+ * about — look identical to the site being broken.
+ *
+ * Only messages built here reach the browser; the raw error stays in the server log.
+ */
+export function chatErrorMessage(error: unknown): string {
+  // streamText retries internally, so a persistent failure arrives wrapped.
+  const cause = RetryError.isInstance(error) ? error.lastError : error;
+
+  if (APICallError.isInstance(cause)) {
+    // 429 covers both per-minute and per-day quota; the daily one won't clear on a retry, so
+    // don't invite the visitor to sit there re-sending.
+    if (cause.statusCode === 429) {
+      return `I've hit my daily limit with the model provider — this chat runs on a free tier. Email me at ${profile.email} and you'll get a faster answer anyway.`;
+    }
+    if (cause.statusCode === 503) {
+      return "The model's overloaded right now. Give it a few seconds and ask again.";
+    }
+  }
+
+  return `Something broke on my end. Try again, or email me at ${profile.email}.`;
+}
 
 /** The env var the provider reads. Used to render the offline state without leaking the value. */
 export const AI_ENV_VAR = "GOOGLE_GENERATIVE_AI_API_KEY";

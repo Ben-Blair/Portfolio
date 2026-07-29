@@ -1,6 +1,13 @@
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 
-import { AI_ENV_VAR, buildSystemPrompt, chatModel, isChatConfigured } from "@/lib/ai";
+import {
+  AI_ENV_VAR,
+  CHAT_PROVIDER_OPTIONS,
+  buildSystemPrompt,
+  chatErrorMessage,
+  chatModel,
+  isChatConfigured,
+} from "@/lib/ai";
 import { profile } from "@content/profile";
 
 export const runtime = "nodejs";
@@ -84,12 +91,13 @@ export async function POST(req: Request) {
     system: buildSystemPrompt(),
     messages: await convertToModelMessages(trimmed),
     temperature: 0.7,
+    providerOptions: CHAT_PROVIDER_OPTIONS,
     onError({ error }) {
       console.error("[chat] stream error:", error);
     },
   });
 
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({ onError: chatErrorMessage });
 }
 
 /** Lets the client render the offline state before anyone types anything. */

@@ -19,10 +19,9 @@ export interface FluidConfig {
   SPLAT_FORCE: number;
   SPLAT_INTENSITY: number;
   OPACITY: number;
-  INTENSITY: number;
-  PASTEL: number;
+  SHADING: number;
   MAX_DPR: number;
-  HUE_DRIFT_SPEED: number;
+  COLOR_UPDATE_SPEED: number;
   SATURATION: number;
   VALUE: number;
   AMBIENT_SPLATS: boolean;
@@ -43,61 +42,89 @@ export const FLUID_CONFIG: FluidConfig = {
 
   /**
    * How fast color fades. Roughly, dye decays to 1/e of its brightness every 1/this seconds,
-   * so 0.32 means a trail is still clearly visible ~3s after you draw it and gone by ~10s.
-   * Push it up if the hero starts feeling muddy; push it down for longer-lived streaks.
+   * so 0.44 leaves a trail readable for a couple of seconds before it clears.
+   *
+   * This is the main dial for how *full* the hero looks. Push it up and the canvas empties out
+   * between strokes; drop it much below this and dye stops clearing between splats, piles up,
+   * and the viewport saturates into flat slabs instead of discrete ribbons.
    */
-  DENSITY_DISSIPATION: 0.16,
+  DENSITY_DISSIPATION: 0.44,
 
-  /** How fast motion dies down. Higher = the fluid settles instead of churning forever. */
-  VELOCITY_DISSIPATION: 0.04,
+  /**
+   * How fast motion dies down. Higher = the fluid settles instead of churning forever.
+   * Above 1 a splat expands once and then largely stops, which is what keeps ribbons thin:
+   * dye never gets smeared across the whole canvas.
+   */
+  VELOCITY_DISSIPATION: 3.4,
 
-  /** Jacobi iterations for the pressure solve. More = less divergence, more GPU. 20 is the sweet spot. */
-  PRESSURE_ITERATIONS: 20,
+  /**
+   * Jacobi iterations for the pressure solve. More = less divergence, more GPU. Upstream uses
+   * 20; 5 is deliberately loose here — the residual divergence reads as extra drift, and this
+   * is a background, not a physics demo.
+   */
+  PRESSURE_ITERATIONS: 5,
 
   /** How much pressure carries between frames. */
-  PRESSURE: 0.8,
+  PRESSURE: 0.44,
 
-  /** Vorticity confinement strength — this is what makes the curls. Turn to 0 for a boring smear. */
-  CURL: 55,
+  /** Vorticity confinement strength — this is what puts the curls back in. */
+  CURL: 3,
 
-  /** Size of the blob injected at the cursor, as a fraction of the canvas. */
-  SPLAT_RADIUS: 0.19,
+  /**
+   * Size of the blob injected at the cursor, as a fraction of the canvas.
+   *
+   * Lower than looks right in isolation, because the glass surfaces are the other consumer of
+   * this. Refraction can only reveal structure that exists — displacing a wide, soft blob just
+   * gives back the same wide, soft blob, and the pills read as frosted plastic. Tighter splats
+   * lay down ribbons with actual edges, which is what the lensing and the colour fringing have
+   * to work with.
+   */
+  SPLAT_RADIUS: 0.11,
 
   /** How hard a cursor move shoves the fluid. */
-  SPLAT_FORCE: 7000,
+  SPLAT_FORCE: 6200,
 
-  /** Multiplier on how bright injected dye is. Lower on light backgrounds. */
-  SPLAT_INTENSITY: 0.42,
+  /**
+   * Multiplier on how bright injected dye is. Upstream scales its generated color by 0.15
+   * here; this injects at full strength instead and pulls the whole canvas back with OPACITY
+   * below. Same end result, but dense and faint dye keep their relative contrast rather than
+   * both being crushed toward zero before the display pass sees them.
+   */
+  SPLAT_INTENSITY: 1,
 
-  /** Overall opacity of the whole canvas. The content has to stay readable on top of it. */
-  OPACITY: 0.95,
+  /**
+   * Overall opacity of the whole canvas, and the counterweight to SPLAT_INTENSITY above.
+   * Low on purpose: the headline sits directly on top of this and has to stay readable.
+   */
+  OPACITY: 0.2,
 
-  /** Contrast of the dye against white. Above ~1.6 it starts to look like paint, not vapor. */
-  INTENSITY: 1.15,
-
-  /** How far each color sits from white. 0 = invisible, 1 = fully saturated. */
-  PASTEL: 0.68,
+  /**
+   * Strength of the fake directional light on the dye gradient, which gives ribbons a lit
+   * edge instead of reading as flat tint. 0 disables the shading branch entirely.
+   */
+  SHADING: 1.0,
 
   /** Cap on device pixel ratio for the canvas. The dye is soft; nobody can tell it's not 3x. */
   MAX_DPR: 1.5,
 
   /**
-   * Hue range (0-1) that splat colors are sampled from, cycling slowly over time so a long
-   * session doesn't stay one color. The reference site drifts through pinks, greens and blues.
+   * How many times per second splat color re-rolls to a new random hue. High on purpose: at
+   * ~12 a single cursor sweep lays down several distinct hues that meet and blend, which is
+   * the whole rainbow look. Turn it down and each stroke becomes one flat color.
    */
-  HUE_DRIFT_SPEED: 0.09,
-  SATURATION: 0.55,
+  COLOR_UPDATE_SPEED: 11.5,
+  SATURATION: 1.0,
   VALUE: 1.0,
 
   /** Idle drift: occasional automatic splats so the hero isn't dead before you touch it. */
-  AMBIENT_SPLATS: true,
+  AMBIENT_SPLATS: false,
   /** Seconds between ambient splats. */
-  AMBIENT_INTERVAL: 1.6,
-  /** Ambient splats are gentler than cursor ones. */
-  AMBIENT_SCALE: 0.5,
+  AMBIENT_INTERVAL: 4,
+  /** Scale applied to ambient splats relative to cursor ones. */
+  AMBIENT_SCALE: 1.05,
 
   /** Splats fired once on load so the hero has color before any interaction. */
-  INITIAL_SPLATS: 16,
+  INITIAL_SPLATS: 0,
 };
 
 /** Halved sim/dye resolution and no ambient splats on small or low-power devices. */

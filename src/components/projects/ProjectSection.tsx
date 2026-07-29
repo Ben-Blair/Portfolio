@@ -79,7 +79,8 @@ export function ProjectSection({
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               href={`/projects/${project.slug}`}
-              className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900 px-5 py-2.5 text-[14px] font-medium text-white transition-opacity hover:opacity-90"
+              className="glass-dark inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[14px] font-medium text-white"
+              data-glass
             >
               Read more
               <ArrowUpRight className="size-4" />
@@ -91,7 +92,8 @@ export function ProjectSection({
                 href={link.href}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-5 py-2.5 text-[14px] font-medium text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+                className="glass inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[14px] font-medium text-neutral-700"
+                data-glass
               >
                 {link.label}
                 <ArrowUpRight className="size-4 text-neutral-400" />

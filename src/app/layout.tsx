@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
-import { SiteFooter } from "@/components/site/SiteFooter";
-import { SiteNav } from "@/components/site/SiteNav";
+import { GlassLayer } from "@/components/site/GlassLayer";
+import { PageBackdrop } from "@/components/site/PageBackdrop";
 import { profile } from "@content/profile";
 
 import "./globals.css";
@@ -59,9 +59,14 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${display.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-white text-neutral-900">
-        <SiteNav />
+        {/* Gives the glass something to refract on sub-pages. The hero paints its own white base
+            over this and runs the fluid sim instead. */}
+        <PageBackdrop />
+        {/* No site chrome by design: the hero's pill row is the only navigation, and every
+            sub-page carries its own <BackHome /> link. */}
         <main className="flex-1">{children}</main>
-        <SiteFooter />
+        {/* Builds the refraction filters behind every `.glass` surface. Renders nothing visible. */}
+        <GlassLayer />
       </body>
     </html>
   );

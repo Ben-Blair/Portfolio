@@ -116,32 +116,6 @@ class Program {
   }
 }
 
-/**
- * Hue anchors the palette cycles through, in the order it walks them.
- *
- * A raw 0..1 hue sweep spends a big chunk of its range in yellow-olive, which looks acidic
- * against white and is the one thing that made this read as "generated gradient" rather than
- * spilled ink. These anchors skip that band entirely and stay in the pink / peach / mint /
- * sky / lavender family.
- */
-const HUE_ANCHORS = [0.95, 0.03, 0.08, 0.42, 0.48, 0.57, 0.7, 0.83];
-
-/** Walks the anchors above, interpolating between neighbours so colours still blend. */
-function paletteHue(t: number): number {
-  const scaled = (t % 1) * HUE_ANCHORS.length;
-  const index = Math.floor(scaled);
-  const frac = scaled - index;
-
-  const a = HUE_ANCHORS[index % HUE_ANCHORS.length];
-  const b = HUE_ANCHORS[(index + 1) % HUE_ANCHORS.length];
-
-  // Interpolate the short way around the colour wheel.
-  let delta = b - a;
-  if (delta > 0.5) delta -= 1;
-  if (delta < -0.5) delta += 1;
-  return (a + delta * frac + 1) % 1;
-}
-
 function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
   const i = Math.floor(h * 6);
   const f = h * 6 - i;
@@ -215,6 +189,8 @@ export class FluidSimulation {
 
   private lastTime = 0;
   private hue = Math.random();
+  /** Counts up by dt * COLOR_UPDATE_SPEED; every time it passes 1, `hue` re-rolls. */
+  private colorUpdateTimer = 0;
   private ambientTimer = 0;
   private rafId: number | null = null;
   private running = false;
@@ -225,11 +201,10 @@ export class FluidSimulation {
 
     const gl = canvas.getContext("webgl2", {
       alpha: true,
-      // The display shader writes straight (non-premultiplied) color + alpha. The WebGL
-      // default is premultipliedAlpha: true, under which pale pastels with low alpha get
-      // treated as already-multiplied and composite to nothing on a white page — the whole
-      // effect silently disappears even though the dye buffer is full of color.
-      premultipliedAlpha: false,
+      // DISPLAY_FRAG emits premultiplied alpha (`vec4(c, max(c.rgb))`), matching upstream.
+      // This must stay true to match it — set it false and the browser divides out an alpha
+      // that was never multiplied in, blowing faint dye out to oversaturated blocks.
+      premultipliedAlpha: true,
       depth: false,
       stencil: false,
       antialias: false,
@@ -551,7 +526,7 @@ export class FluidSimulation {
 
   /** A splat using the current drifting hue, scaled by `intensity`. */
   splatWithCurrentHue(x: number, y: number, dx: number, dy: number, intensity = 1) {
-    const [r, g, b] = hsvToRgb(paletteHue(this.hue), this.config.SATURATION, this.config.VALUE);
+    const [r, g, b] = hsvToRgb(this.hue, this.config.SATURATION, this.config.VALUE);
     const k = this.config.SPLAT_INTENSITY * intensity;
     this.splat(x, y, dx, dy, [r * k, g * k, b * k]);
   }
@@ -568,8 +543,8 @@ export class FluidSimulation {
       const x = 0.12 + Math.random() * 0.76;
       const y = 0.15 + Math.random() * 0.7;
       const angle = Math.random() * Math.PI * 2;
-      const force = 140 + Math.random() * 260;
-      this.hue = (this.hue + 0.16) % 1;
+      const force = 25 + Math.random() * 55;
+      this.hue = Math.random();
       this.splatWithCurrentHue(x, y, Math.cos(angle) * force, Math.sin(angle) * force, 1.15);
     }
   }
@@ -635,12 +610,23 @@ export class FluidSimulation {
     const dt = Math.min((now - this.lastTime) / 1000, 0.0166);
     this.lastTime = now;
 
-    this.hue = (this.hue + dt * this.config.HUE_DRIFT_SPEED) % 1;
-
+    this.updateColor(dt);
     this.updateAmbient(dt);
     this.applySplats();
     this.step(dt);
     this.render();
+  }
+
+  /**
+   * Jump to a brand new random hue several times a second rather than drifting smoothly.
+   * The discontinuity is the point: consecutive splats in one stroke land in unrelated parts
+   * of the wheel, so the trail is a run of distinct colors bleeding into each other.
+   */
+  private updateColor(dt: number) {
+    this.colorUpdateTimer += dt * this.config.COLOR_UPDATE_SPEED;
+    if (this.colorUpdateTimer < 1) return;
+    this.colorUpdateTimer %= 1;
+    this.hue = Math.random();
   }
 
   private updateAmbient(dt: number) {
@@ -653,7 +639,7 @@ export class FluidSimulation {
     const y = 0.1 + Math.random() * 0.8;
     const angle = Math.random() * Math.PI * 2;
     // Same texel-unit caveat as seed(): keep ambient drift gentle.
-    const force = 120 + Math.random() * 220;
+    const force = 30 + Math.random() * 60;
     this.splatWithCurrentHue(
       x,
       y,
@@ -790,9 +776,12 @@ export class FluidSimulation {
 
     display.bind();
     gl.uniform1i(display.uniforms.uTexture, this.dye.read.attach(0));
-    gl.uniform1f(display.uniforms.uIntensity, this.config.INTENSITY);
+    // The shading pass reads the four neighbour texels via vL/vR/vT/vB, and those varyings are
+    // offset by uTexelSize in the vertex shader — leave it unset and they all collapse onto vUv,
+    // giving a zero gradient and no shading at all.
+    gl.uniform2f(display.uniforms.uTexelSize, this.dye.texelSizeX, this.dye.texelSizeY);
     gl.uniform1f(display.uniforms.uOpacity, this.config.OPACITY);
-    gl.uniform1f(display.uniforms.uPastel, this.config.PASTEL);
+    gl.uniform1f(display.uniforms.uShading, this.config.SHADING);
     this.blit(null);
   }
 
@@ -849,12 +838,6 @@ export class FluidSimulation {
     pointer.deltaY = (pointer.texcoordY - pointer.prevTexcoordY) * (aspect > 1 ? 1 / aspect : 1);
 
     if (Math.abs(pointer.deltaX) === 0 && Math.abs(pointer.deltaY) === 0) return;
-
-    // Nudge the hue along with the gesture, not just with time. Time-only drift means every
-    // splat in one fast stroke gets nearly the same colour, and you end up painting a single
-    // flat slab of green instead of a wash where several hues meet and blend.
-    const travelled = Math.hypot(pointer.deltaX, pointer.deltaY);
-    this.hue = (this.hue + travelled * 0.9) % 1;
 
     const force = this.config.SPLAT_FORCE;
     this.splatWithCurrentHue(

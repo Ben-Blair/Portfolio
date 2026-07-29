@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { ProjectRail } from "@/components/projects/ProjectRail";
 import { ProjectSection } from "@/components/projects/ProjectSection";
+import { BackHome } from "@/components/site/BackHome";
 import { getProjects } from "@/lib/content";
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default function ProjectsPage() {
   if (projects.length === 0) {
     return (
       <div className="mx-auto max-w-2xl px-5 py-32 text-center">
+        <BackHome />
         <h1 className="font-display text-3xl font-extrabold tracking-tight">No projects yet</h1>
         <p className="mt-3 text-neutral-600">
           Add an <code className="font-mono text-[13px]">.mdx</code> file to{" "}
@@ -27,6 +29,8 @@ export default function ProjectsPage() {
 
   return (
     <>
+      <BackHome />
+
       <ProjectRail projects={projects.map((p) => ({ slug: p.slug, title: p.title }))} />
 
       {/*

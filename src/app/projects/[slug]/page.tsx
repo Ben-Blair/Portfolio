@@ -7,6 +7,7 @@ import { compileMDX } from "next-mdx-remote/rsc";
 import { MediaList } from "@/components/media/MediaBlock";
 import { Badge } from "@/components/ui/badge";
 import { mdxComponents } from "@/components/mdx/MdxComponents";
+import { BackHome } from "@/components/site/BackHome";
 import { getProject, getProjects } from "@/lib/content";
 
 export function generateStaticParams() {
@@ -51,6 +52,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 
   return (
     <article className="mx-auto max-w-3xl px-5 py-16">
+      <BackHome />
+
       <Link
         href="/projects"
         className="inline-flex items-center gap-1.5 text-[13.5px] text-neutral-500 transition-colors hover:text-neutral-900"
@@ -89,7 +92,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 href={link.href}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-4 py-2 text-[13.5px] font-medium text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+                className="glass inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13.5px] font-medium text-neutral-700"
+                data-glass
               >
                 {link.label}
                 <ArrowUpRight className="size-3.5 text-neutral-400" />
