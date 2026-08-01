@@ -50,7 +50,7 @@ export function ChatDock() {
         {/* Deliberately the same pill and the same blue circle as the live form below. When the
             model key is missing this is still the one place to put a question — it just reaches a
             person instead of a model, so it shouldn't announce itself as a different control. */}
-        <div className="glass relative flex items-center rounded-full text-left" data-glass>
+        <div className="glass relative flex items-center rounded-full text-left" data-glass suppressHydrationWarning>
           <p className="flex-1 py-4 pl-6 pr-14 text-[15px] text-neutral-400">
             Chat is offline — email me instead.
           </p>
@@ -82,6 +82,7 @@ export function ChatDock() {
         }}
         className="glass group relative flex items-center rounded-full focus-within:shadow-[inset_0_0_0_1px_rgb(0_0_0/0.16),0_6px_24px_rgb(0_0_0/0.12)]"
         data-glass
+        suppressHydrationWarning
       >
         <input
           value={input}
@@ -89,7 +90,7 @@ export function ChatDock() {
           placeholder="Ask me anything..."
           aria-label={`Ask ${profile.name} anything`}
           disabled={configured === null}
-          className="w-full flex-1 select-text rounded-full bg-transparent py-4 pl-6 pr-14 text-[15px] text-neutral-800 outline-none placeholder:text-neutral-400 disabled:cursor-wait"
+          className="w-full flex-1 select-text rounded-full bg-transparent py-4 pl-6 pr-14 text-[15px] text-neutral-800 outline-none placeholder:text-neutral-600 disabled:cursor-wait"
         />
         {/* Disabled is a lighter blue rather than grey: with nothing typed the button is the main
             thing pointing at the empty input, so it should still read as the action you're meant
@@ -112,6 +113,7 @@ export function ChatDock() {
             onClick={() => submit(prompt)}
             className="glass rounded-full px-3 py-1.5 text-[12.5px] text-neutral-500 hover:text-neutral-900"
             data-glass
+            suppressHydrationWarning
           >
             {prompt}
           </button>

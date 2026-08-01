@@ -41,6 +41,7 @@ export function Hero() {
         href="/resume"
         className="glass absolute left-5 top-5 z-10 hidden items-center gap-2 rounded-full py-2 pl-4 pr-3 text-[13px] font-medium text-neutral-700 sm:flex"
         data-glass
+        suppressHydrationWarning
       >
         Resume · updated {resume.updated}
         <ArrowRight className="size-3.5 text-neutral-400" />

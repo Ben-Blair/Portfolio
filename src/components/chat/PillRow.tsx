@@ -61,12 +61,13 @@ export function PillRow({
         return (
           <Link
             key={pill.label}
-            href={"panel" in pill ? `/chat?panel=${pill.panel}` : pill.href}
+            href={`/chat?panel=${pill.panel}`}
             className={cn(
               "glass flex items-center rounded-2xl text-[13px] font-medium text-neutral-700 hover:-translate-y-0.5",
               VARIANTS[variant],
             )}
             data-glass
+            suppressHydrationWarning
           >
             <Icon className="size-5" style={{ color: pill.color }} strokeWidth={1.75} />
             {pill.label}

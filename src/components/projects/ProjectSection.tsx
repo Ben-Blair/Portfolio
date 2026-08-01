@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { MediaBlock } from "@/components/media/MediaBlock";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +14,10 @@ import type { Project } from "@/lib/schema";
  *
  * Media and copy alternate sides down the page so it doesn't read as a list of identical
  * rows. The section is tinted with the project's own `accent`.
+ *
+ * The content block itself fades and settles down into place the first time it scrolls into
+ * view — top to bottom, like the page is revealing it rather than it just being there. It only
+ * ever plays once per section (the observer disconnects itself on the first intersection).
  */
 export function ProjectSection({
   project,
@@ -24,10 +31,29 @@ export function ProjectSection({
   const flipped = index % 2 === 1;
   const hero = project.media[0];
 
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.2 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section
       id={project.slug}
-      className="relative flex min-h-[100svh] snap-start items-center overflow-hidden py-24"
+      className="relative flex min-h-[100svh] snap-start items-center overflow-hidden py-12"
       style={
         {
           // Consumed by the tint layer below; keeps the accent out of every child class.
@@ -43,7 +69,14 @@ export function ProjectSection({
         }}
       />
 
-      <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-5 md:grid-cols-2 md:gap-14 xl:pr-24">
+      <div
+        ref={ref}
+        className={cn(
+          "mx-auto grid w-full max-w-6xl items-center gap-10 px-5 md:grid-cols-2 md:gap-14 xl:pr-24",
+          "transition-all duration-700 ease-out motion-reduce:transition-none",
+          visible ? "translate-y-0 opacity-100" : "-translate-y-8 opacity-0",
+        )}
+      >
         <div className={cn("min-w-0", flipped && "md:order-2")}>
           {hero ? (
             <MediaBlock media={hero} />
@@ -81,6 +114,7 @@ export function ProjectSection({
               href={`/projects/${project.slug}`}
               className="glass-dark inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[14px] font-medium text-white"
               data-glass
+              suppressHydrationWarning
             >
               Read more
               <ArrowUpRight className="size-4" />
@@ -94,6 +128,7 @@ export function ProjectSection({
                 rel="noreferrer"
                 className="glass inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[14px] font-medium text-neutral-700"
                 data-glass
+                suppressHydrationWarning
               >
                 {link.label}
                 <ArrowUpRight className="size-4 text-neutral-400" />

@@ -1,15 +1,20 @@
 "use client";
 
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
-import { ArrowRight, ChevronDown, ChevronUp, Info, Loader2, Sparkles, Square } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronUp, Info, Sparkles, Square } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { Answer, TypingDots, withoutPartialBold, wordBoundary } from "@/components/chat/Answer";
 import { ErrorLine } from "@/components/chat/ErrorLine";
 import { PillRow } from "@/components/chat/PillRow";
+import { QuestionBubble } from "@/components/chat/QuestionBubble";
 import { PANELS } from "@/components/chat/blocks/panels";
 import { chatHref } from "@/components/chat/href";
+import { PanelAnswer } from "@/components/chat/reveal";
+import { useReducedMotion } from "@/components/chat/useReducedMotion";
+import { useTypewriter } from "@/components/chat/useTypewriter";
 import {
   Dialog,
   DialogContent,
@@ -18,33 +23,42 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { profile } from "@content/profile";
 
 /**
- * Blank line separated, the way the system prompt asks the model to write.
+ * How long a panel sits on the typing dots before it starts answering.
  *
- * `**bold**` is the one piece of markdown the prompt allows and the model reliably uses, so it's
- * the one piece parsed here. Everything else stays literal — this is the answer surface, not a
- * document renderer, and a half-supported markdown dialect reads worse than none.
+ * A written answer is ready the instant you click, and showing it that way makes the pill feel
+ * like a link again — the bubble would be on screen for a single frame. The pause is the model
+ * thinking, except there's no model: it costs nothing and it's what makes the turn read as a
+ * reply. Roughly the time to the model's first token on a real question.
  */
-function Answer({ text }: { text: string }) {
+const PANEL_THINKING_MS = 550;
+
+/**
+ * How long the question and the dots take to clear out before the answer starts arriving.
+ *
+ * They used to leave on the same frame the answer landed, which meant the two motions were
+ * happening on top of each other and neither read as causing the other. Given a beat to itself,
+ * the turn has three parts you can actually follow: asked, thought about, answered.
+ *
+ * Matched by hand in `QuestionBubble`'s `lift` mode and `TypingDots` — CSS transitions can't read
+ * a constant, and a style prop for two numbers that never change independently isn't worth it.
+ */
+const PANEL_EXIT_MS = 440;
+
+/**
+ * The last thing `role` said, with its text parts joined — one reply can arrive as several.
+ */
+function lastText(messages: UIMessage[], role: "user" | "assistant") {
   return (
-    <div className="space-y-4">
-      {text.split(/\n{2,}/).map((paragraph, index) => (
-        <p key={index} className="whitespace-pre-wrap text-[15px] leading-[1.7] text-neutral-700">
-          {paragraph.split(/\*\*(.+?)\*\*/g).map((part, partIndex) =>
-            // Odd indexes are what was inside the asterisks.
-            partIndex % 2 === 1 ? (
-              <strong key={partIndex} className="font-semibold text-neutral-900">
-                {part}
-              </strong>
-            ) : (
-              part
-            ),
-          )}
-        </p>
-      ))}
-    </div>
+    messages
+      .filter((message) => message.role === role)
+      .at(-1)
+      ?.parts.map((part) => (part.type === "text" ? part.text : ""))
+      .join("")
+      .trim() ?? ""
   );
 }
 
@@ -60,10 +74,41 @@ export function ChatView() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get("query")?.trim() ?? "";
-  const panel = PANELS[searchParams.get("panel") ?? ""];
+  const panelKey = searchParams.get("panel") ?? "";
+  const panel = PANELS[panelKey];
 
   const [input, setInput] = useState("");
   const [showPills, setShowPills] = useState(true);
+
+  // The written answer's equivalent of waiting on a first token, then clearing the screen for it.
+  // Keyed off the panel so moving pill to pill takes both beats again rather than cutting straight
+  // to the next answer. Which panel reached each milestone, rather than flags plus a reset: a new
+  // panel is simply one neither of these names yet, so switching pills goes back to the dots
+  // without a second render.
+  const reduced = useReducedMotion();
+  const [left, setLeft] = useState("");
+  const [answered, setAnswered] = useState("");
+  const exiting = Boolean(panelKey) && left === panelKey;
+  const answering = Boolean(panelKey) && answered === panelKey;
+
+  useEffect(() => {
+    if (!panelKey) return;
+    const timer = setTimeout(() => setLeft(panelKey), reduced ? 0 : PANEL_THINKING_MS);
+    return () => clearTimeout(timer);
+  }, [panelKey, reduced]);
+
+  useEffect(() => {
+    if (!exiting) return;
+    const timer = setTimeout(() => setAnswered(panelKey), reduced ? 0 : PANEL_EXIT_MS);
+    return () => clearTimeout(timer);
+  }, [exiting, panelKey, reduced]);
+
+  // Some panels (Projects) have no written answer at all — the thinking beat plays out the same
+  // way, but instead of revealing a `Block` it hands off to the real page once the dots have
+  // finished clearing, rather than ever rendering an inline answer.
+  useEffect(() => {
+    if (answering && panel && "redirectTo" in panel) router.push(panel.redirectTo);
+  }, [answering, panel, router]);
 
   const { messages, sendMessage, status, error, stop, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
@@ -89,12 +134,22 @@ export function ChatView() {
     router.push(chatHref(trimmed));
   }
 
-  const answer = messages
-    .filter((message) => message.role === "assistant")
-    .at(-1)
-    ?.parts.map((part) => (part.type === "text" ? part.text : ""))
-    .join("")
-    .trim();
+  // Pinned to the question the URL is actually asking. The two go out of step for a render or
+  // two — on Back, and between the click and the effect above — and without this the previous
+  // answer flashes underneath the new question's bubble before being cleared.
+  const answer = lastText(messages, "user") === query ? lastText(messages, "assistant") : "";
+
+  const { typed, tail, typing } = useTypewriter(answer, { active: Boolean(query), done: !busy });
+
+  // Mid-stream the partial-bold guard is doing real work; once there's a tail the answer is
+  // whole, its markers are all closed, and the guard has nothing to find.
+  const shown = tail ? typed + tail : withoutPartialBold(typed);
+  // Nothing typed means no word in progress to let finish, so the fade starts at the top.
+  const fadeFrom = tail ? (typed ? wordBoundary(shown, typed.length) : 0) : null;
+
+  // The bubble clears when there's a first character to take its place, rather than when the
+  // first token lands — otherwise it makes room for an empty page.
+  const started = shown.length > 0;
 
   return (
     // bg-white rather than the site's PageBackdrop: this page is mostly body copy, and the
@@ -105,6 +160,7 @@ export function ChatView() {
           aria-label="About this chat"
           className="glass fixed right-4 top-4 z-40 flex size-9 items-center justify-center rounded-full text-neutral-500 hover:text-neutral-900"
           data-glass
+          suppressHydrationWarning
         >
           <Info className="size-4" />
         </DialogTrigger>
@@ -122,32 +178,64 @@ export function ChatView() {
       </Dialog>
 
       <div className="flex flex-1 flex-col px-5 pb-10 pt-28 sm:pt-32">
-        {/* `my-auto` centres a short answer in the gap between the avatar and the input, the way
-            the page reads with one paragraph on it, then collapses to normal flow once the
-            content is tall enough to need the room. */}
-        <div className="mx-auto my-auto w-full max-w-2xl">
+        {/* `my-auto` centres short content in the gap between the avatar and the input, then
+            collapses to normal flow once there's enough of it to need the room.
+
+            Not while a question is on screen, though: the answer is typed out a character at a
+            time, and centring it would re-centre on every character, so the text would crawl
+            upward the whole time you were reading it. Those start at the top and grow down. */}
+        <div className={cn("mx-auto w-full max-w-2xl", !query && !panel && "my-auto")}>
           {panel ? (
-            <>
-              <h1 className="font-display text-[clamp(1.75rem,5vw,2.25rem)] font-extrabold tracking-[-0.035em] text-neutral-900">
-                {panel.title}
-              </h1>
-              <div className="mt-6">
-                <panel.Block />
-              </div>
-            </>
-          ) : (
-            /* Screen-reader users get told an answer arrived; everyone else watches it stream. */
-            <div aria-live="polite" aria-busy={busy}>
-              {answer && <Answer text={answer} />}
+            // The same turn a typed question gets: the question asked, a beat, then an answer
+            // that arrives a piece at a time. None of it costs a model call.
+            <div>
+              <QuestionBubble question={panel.question} hidden={exiting || answering} lift />
 
-              {status === "submitted" && !answer && (
-                <p className="flex items-center gap-2 text-[15px] text-neutral-400">
-                  <Loader2 className="size-4 animate-spin" />
-                  Thinking…
-                </p>
+              {answering && panel && "Block" in panel ? (
+                <PanelAnswer key={panelKey}>
+                  <panel.Block />
+                </PanelAnswer>
+              ) : answering ? null : (
+                // The same `1fr → 0fr` close the question is doing above it, so both are out of
+                // the layout by the frame the answer mounts. `min-h-0` rather than
+                // `overflow-hidden`: the dots leave downward, and clipping them to a row that's
+                // shutting would eat the motion that says they left.
+                <div
+                  aria-hidden="true"
+                  className="grid transition-[grid-template-rows] duration-[440ms] ease-in-out motion-reduce:transition-none"
+                  style={{ gridTemplateRows: exiting ? "0fr" : "1fr" }}
+                >
+                  <div className="min-h-0">
+                    <TypingDots leaving={exiting} />
+                  </div>
+                </div>
               )}
+            </div>
+          ) : (
+            <div>
+              {/* Decorative, all of it: the bubble repeats what the visitor just typed, and the
+                  answer is the same text the live region below carries, only drawn a character
+                  at a time. Announcing that character by character would be unusable. */}
+              <div aria-hidden="true">
+                {query && <QuestionBubble question={query} hidden={started} />}
 
-              {error && <ErrorLine error={error} />}
+                {started && <Answer text={shown} fadeFrom={fadeFrom} caret={busy || typing} />}
+
+                {busy && !started && <TypingDots />}
+              </div>
+
+              {/* Screen-reader users get told an answer arrived; everyone else watches it type. */}
+              <div aria-live="polite" aria-busy={busy}>
+                <p className="sr-only">{answer}</p>
+
+                {/* Nothing above it when the model fails before writing anything — the bubble
+                    brings its own spacing, and it's still there in that case. */}
+                {error && (
+                  <div className={cn(started && "mt-6")}>
+                    <ErrorLine error={error} />
+                  </div>
+                )}
+              </div>
 
               {!query && !busy && !error && (
                 <div>
@@ -211,6 +299,7 @@ export function ChatView() {
                   aria-label="Ask me something random"
                   className="glass flex size-10 items-center justify-center rounded-full text-neutral-500 hover:-translate-y-0.5 hover:text-neutral-900"
                   data-glass
+                  suppressHydrationWarning
                 >
                   <Sparkles className="size-4" />
                 </button>
@@ -225,13 +314,14 @@ export function ChatView() {
             }}
             className="glass relative mt-3 flex items-center rounded-full focus-within:shadow-[inset_0_0_0_1px_rgb(0_0_0/0.16),0_6px_24px_rgb(0_0_0/0.12)]"
             data-glass
+            suppressHydrationWarning
           >
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
               placeholder="Ask me anything..."
               aria-label={`Ask ${profile.name} anything`}
-              className="w-full flex-1 rounded-full bg-transparent py-3.5 pl-6 pr-14 text-[15px] text-neutral-800 outline-none placeholder:text-neutral-400"
+              className="w-full flex-1 rounded-full bg-transparent py-3.5 pl-6 pr-14 text-[15px] text-neutral-800 outline-none placeholder:text-neutral-600"
             />
             <button
               type={busy ? "button" : "submit"}

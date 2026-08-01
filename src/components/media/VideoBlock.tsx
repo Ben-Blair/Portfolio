@@ -47,7 +47,7 @@ export function VideoBlock({ src, poster, loop, autoplay, controls, caption }: V
         muted
         playsInline
         preload="metadata"
-        className="w-full rounded-2xl border border-neutral-200 bg-neutral-900"
+        className="aspect-video w-full rounded-2xl border border-neutral-200 bg-neutral-900"
       />
       {caption && <figcaption className="mt-2 text-[13px] text-neutral-500">{caption}</figcaption>}
     </figure>
@@ -58,14 +58,21 @@ export function VideoBlock({ src, poster, loop, autoplay, controls, caption }: V
  * A YouTube video behind a facade: nothing is requested from youtube.com until the visitor
  * actually clicks play. Keeps the page fast and avoids loading their trackers on every view.
  */
-export function YouTubeBlock({ id, title, poster, caption }: YouTubeProps) {
+export function YouTubeBlock({ id, title, poster, loop, caption }: YouTubeProps) {
   const [playing, setPlaying] = useState(false);
   const thumbnail = poster ?? `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
 
   return (
     <figure className="not-prose">
       <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-900">
-        {playing ? (
+        {loop ? (
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0`}
+            title={title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            className="absolute inset-0 size-full"
+          />
+        ) : playing ? (
           <iframe
             src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1`}
             title={title}

@@ -13,7 +13,8 @@ export const profile = {
   /** Faded wordmark bleeding off the bottom of the hero. */
   wordmark: "Blair",
 
-  location: "Dana Point, CA",
+  location: "Boulder, CO",
+  age: 21,
   email: "1benblair@gmail.com",
 
   /** Hero portrait. Drop a file in public/ and point at it. Square images work best. */
@@ -21,13 +22,41 @@ export const profile = {
 
   /** One or two sentences, used on the homepage and in social previews. */
   blurb:
-    "Computer science undergrad at CU Boulder building real-time computer vision, embedded systems, and 3D capture pipelines — plus the occasional high-power rocket.",
+    "Computer science undergrad at CU Boulder building real-time computer vision, embedded firmware, 3D capture pipelines, and production full-stack platforms — plus the occasional high-power rocket.",
+
+  /**
+   * The short hello that sits beside the photo — the first thing anyone reads.
+   * Each string is a line; keep it to a handful, since the column next to a portrait is narrow.
+   */
+  intro: [
+    "Hey 👋",
+    "I'm Ben, a Computer Science junior at CU Boulder, class of 2027. I build software for physical systems — mmWave radar, computer vision on a Raspberry Pi, ESP32 firmware, and 3D scans you can spin around in a browser.",
+    "This summer I built and self-hosted a full-stack operations platform that replaced a company's SaaS subscription, so I'm equally at home in Next.js and TypeScript.",
+    "I'm looking for software engineering work with direct real-world impact.",
+  ],
+
+  /** The chips under the intro — what I'd want someone to remember in five seconds. */
+  tags: [
+    "Computer Vision",
+    "Embedded",
+    "Full-Stack",
+    "3D / Gaussian Splatting",
+    "CU Boulder",
+    "Rocketry",
+  ],
 
   /** Longer version for the About page. Each string is a paragraph. */
   about: [
     "I'm a junior studying Computer Science at the University of Colorado Boulder, graduating in 2027. Most of what I build sits where software meets the physical world: cameras, sensors, radar, rockets, and 3D scans of real objects.",
-    "That's meant training anomaly detection models to run on a Raspberry Pi, mapping rooms with mmWave radar, and building Gaussian splatting pipelines to turn things I've made into models you can spin around in a browser — like the ones on this site.",
+    "That's meant training anomaly detection models to run on a Raspberry Pi, mapping rooms with mmWave radar, writing ESP32 firmware in C++, and building Gaussian splatting pipelines to turn things I've made into models you can spin around in a browser — like the ones on this site.",
+    "The other half is production software. This past summer I interned at Niguel Point Property Management, where I built and self-hosted a full-stack operations platform in Next.js and TypeScript that replaced the company's SaaS subscription, plus a Python scraping pipeline that runs in an ephemeral cloud sandbox and delivers 74 reports a week.",
     "I also founded Jesus Club CU, a student club at Boulder, which taught me as much about shipping and maintaining something people actually depend on as any codebase has.",
+  ],
+
+  /** What the contact page opens with, and what the Contact pill answers. One string, one paragraph. */
+  contact: [
+    "I'm looking for internships and new-grad roles where I can work on computer vision, 3D, embedded systems, or anything that touches real hardware. If that's you, I'd like to hear about it.",
+    "Email is the fastest way to reach me. I read everything.",
   ],
 
   socials: [
@@ -49,7 +78,7 @@ export const profile = {
    */
   pills: [
     { label: "Me", icon: "smile", panel: "me", href: "/about", color: "#329696" },
-    { label: "Projects", icon: "briefcase", href: "/projects", color: "#3e9858" },
+    { label: "Projects", icon: "briefcase", panel: "projects", href: "/projects", color: "#3e9858" },
     { label: "Skills", icon: "layers", panel: "skills", href: "/skills", color: "#866eda" },
     { label: "Fun", icon: "party", panel: "fun", href: "/fun", color: "#ba5f9d" },
     { label: "Contact", icon: "user-search", panel: "contact", href: "/contact", color: "#c19433" },

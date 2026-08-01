@@ -71,6 +71,7 @@ export default function SkillsPage() {
           href="/projects"
           className="glass-dark inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[14px] font-medium text-white"
           data-glass
+          suppressHydrationWarning
         >
           See it in practice
         </Link>
@@ -78,6 +79,7 @@ export default function SkillsPage() {
           href="/resume"
           className="glass inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[14px] font-medium text-neutral-700"
           data-glass
+          suppressHydrationWarning
         >
           Read the resume
         </Link>

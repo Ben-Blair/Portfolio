@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 
-import { GalleryBlock, ImageBlock } from "@/components/media/ImageBlock";
+import { CarouselBlock, GalleryBlock, ImageBlock } from "@/components/media/ImageBlock";
 import { LivePhotoBlock, VideoBlock, YouTubeBlock } from "@/components/media/VideoBlock";
 import type { Media } from "@/lib/schema";
 
@@ -66,6 +66,8 @@ export function MediaBlock({ media }: { media: Media }) {
       return <ImageBlock {...media} />;
     case "gallery":
       return <GalleryBlock {...media} />;
+    case "carousel":
+      return <CarouselBlock {...media} />;
     case "video":
       return <VideoBlock {...media} />;
     case "youtube":

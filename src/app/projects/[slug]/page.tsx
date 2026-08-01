@@ -94,6 +94,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 rel="noreferrer"
                 className="glass inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13.5px] font-medium text-neutral-700"
                 data-glass
+                suppressHydrationWarning
               >
                 {link.label}
                 <ArrowUpRight className="size-3.5 text-neutral-400" />

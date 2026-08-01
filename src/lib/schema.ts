@@ -33,6 +33,13 @@ const galleryMedia = z.object({
   columns: z.number().int().min(2).max(4).default(3),
 });
 
+/** A hero-sized photo carousel with next/back buttons. */
+const carouselMedia = z.object({
+  ...base,
+  type: z.literal("carousel"),
+  items: z.array(imageItem).min(1),
+});
+
 /** A self-hosted video file (mp4/webm) in `public/media/<slug>/`. */
 const videoMedia = z.object({
   ...base,
@@ -54,6 +61,8 @@ const youtubeMedia = z.object({
   title: z.string().default("YouTube video"),
   /** Override the auto-derived thumbnail if YouTube's is letterboxed or ugly. */
   poster: z.string().optional(),
+  /** Play muted, autoplaying, and looping — no click-to-play facade. */
+  loop: z.boolean().default(false),
 });
 
 /**
@@ -97,6 +106,7 @@ const splatMedia = z.object({
 export const mediaSchema = z.discriminatedUnion("type", [
   imageMedia,
   galleryMedia,
+  carouselMedia,
   videoMedia,
   youtubeMedia,
   livePhotoMedia,

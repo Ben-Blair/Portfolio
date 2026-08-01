@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -9,6 +10,7 @@ import type { Media } from "@/lib/schema";
 
 type ImageProps = Extract<Media, { type: "image" }>;
 type GalleryProps = Extract<Media, { type: "gallery" }>;
+type CarouselProps = Extract<Media, { type: "carousel" }>;
 
 export function ImageBlock({ src, alt, fit, caption }: ImageProps) {
   return (
@@ -28,6 +30,53 @@ export function ImageBlock({ src, alt, fit, caption }: ImageProps) {
         />
       </div>
       {caption && <figcaption className="mt-2 text-[13px] text-neutral-500">{caption}</figcaption>}
+    </figure>
+  );
+}
+
+export function CarouselBlock({ items, caption }: CarouselProps) {
+  const [index, setIndex] = useState(0);
+  const active = items[index];
+
+  const goPrev = () => setIndex((current) => (current - 1 + items.length) % items.length);
+  const goNext = () => setIndex((current) => (current + 1) % items.length);
+
+  return (
+    <figure className="not-prose">
+      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
+        <Image
+          src={active.src}
+          alt={active.alt}
+          fill
+          sizes="(max-width: 768px) 100vw, 720px"
+          className="object-cover"
+        />
+        {items.length > 1 && (
+          <div className="absolute bottom-3 right-3 flex gap-2">
+            <button
+              type="button"
+              onClick={goPrev}
+              aria-label="Previous photo"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-colors hover:bg-black/70"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              aria-label="Next photo"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-colors hover:bg-black/70"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+      </div>
+      {(active.caption ?? caption) && (
+        <figcaption className="mt-2 text-[13px] text-neutral-500">
+          {active.caption ?? caption}
+        </figcaption>
+      )}
     </figure>
   );
 }

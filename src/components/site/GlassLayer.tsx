@@ -13,8 +13,17 @@ import { buildDisplacementMap, type Corners } from "@/lib/glass/displacementMap"
  *
  * So this component sits once at the root, watches for anything marked `data-glass`, and gives
  * each one its own `<filter>` built to its measured size. Call sites stay ordinary server-rendered
- * markup: `className="glass" data-glass`. That matters — most of the buttons here are `<Link>`s
- * inside server components, which can't be handed to a client wrapper as a prop.
+ * markup: `className="glass" data-glass suppressHydrationWarning`. That matters — most of the
+ * buttons here are `<Link>`s inside server components, which can't be handed to a client wrapper
+ * as a prop.
+ *
+ * `suppressHydrationWarning` is required on every one of them. This component lives in the root
+ * layout, so its effect runs as soon as the layout hydrates — which, with streaming and Suspense,
+ * is before the page's own boundaries have hydrated. By then it has already written
+ * `--glass-filter` onto elements React is about to hydrate, and React flags the inline style it
+ * didn't render as a mismatch. Nothing is actually wrong (React leaves the value alone, and the
+ * effect re-syncs anything added later), so the flag is what needs silencing. It's shallow: it
+ * covers the element's own attributes, not its children.
  *
  * Per-element overrides, both optional and rarely needed — the defaults scale themselves to the
  * element, so a tag chip and the chat panel both get a lens in proportion to their own size:
@@ -46,7 +55,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
  *
  * Set to 0 to collapse the three passes back to one visually, without touching the chain.
  */
-const DISPERSION = 0.07;
+const DISPERSION = 0.1;
 
 type Entry = {
   id: string;
@@ -200,14 +209,15 @@ export function GlassLayer() {
       );
 
       const scaleAttr = Number(el.getAttribute("data-glass-scale"));
-      // feDisplacementMap offsets by up to scale/2 px, so this pulls the rim by ~1.5×bevel.
+      // feDisplacementMap offsets by up to scale/2 px, so this pulls the rim by ~1.9×bevel.
       //
       // This multiplier used to be 1.4, which put the maximum offset at ~7px on a standard pill.
       // That is not enough to see: the backdrop only moves by a few pixels, and the blur in
       // `backdrop-filter` then smooths the difference away, so the surface read as a plain
       // frosted panel. Measured against a hard-edged test pattern, the lensing only becomes
-      // legible somewhere north of 2×, and the colour fringing needs the same room.
-      const scale = Number.isFinite(scaleAttr) && scaleAttr > 0 ? scaleAttr : bevel * 3;
+      // legible somewhere north of 2×, and the colour fringing needs the same room. It sits at
+      // 3.8× so the rim still reads as a lens through the wider frost blur in `globals.css`.
+      const scale = Number.isFinite(scaleAttr) && scaleAttr > 0 ? scaleAttr : bevel * 3.8;
 
       const key = `${width}x${height}:${bevel}:${scale}:${Object.values(corners).join(",")}`;
       if (key === entry.key) return;

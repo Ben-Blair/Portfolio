@@ -38,6 +38,7 @@ export default function ResumePage() {
             download={resume.downloadAs}
             className="glass-dark inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[13.5px] font-medium text-white"
             data-glass
+            suppressHydrationWarning
           >
             <Download className="size-3.5" />
             Download PDF
@@ -48,6 +49,7 @@ export default function ResumePage() {
             rel="noreferrer"
             className="glass inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[13.5px] font-medium text-neutral-700"
             data-glass
+            suppressHydrationWarning
           >
             <ExternalLink className="size-3.5 text-neutral-400" />
             Open
@@ -85,6 +87,10 @@ export default function ResumePage() {
                 {entry.degree}
                 {entry.detail && <span className="text-neutral-400"> · {entry.detail}</span>}
               </p>
+              <p className="mt-2 text-[14px] leading-relaxed text-neutral-500">
+                <span className="text-neutral-400">Relevant coursework: </span>
+                {entry.coursework.join(", ")}
+              </p>
             </li>
           ))}
         </ul>
@@ -116,7 +122,7 @@ export default function ResumePage() {
                   )}
                 </p>
                 <p className="font-mono text-[12.5px] text-neutral-400">
-                  {entry.start} – {entry.end}
+                  {entry.end ? `${entry.start} – ${entry.end}` : entry.start}
                 </p>
               </div>
               <ul className="mt-2 space-y-1.5">
@@ -155,6 +161,33 @@ export default function ResumePage() {
                   </li>
                 ))}
               </ul>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <Separator className="my-10" />
+
+      <section>
+        <h2 className="font-mono text-[12px] uppercase tracking-widest text-neutral-400">
+          Activities, Leadership & Certifications
+        </h2>
+        <ul className="mt-4 space-y-5">
+          {resume.activities.map((entry) => (
+            <li key={entry.name}>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+                <p className="font-display text-[17px] font-bold text-neutral-900">
+                  {entry.name}
+                  <span className="font-sans text-[15px] font-normal text-neutral-500">
+                    {" "}
+                    · {entry.org}
+                  </span>
+                </p>
+                {"when" in entry && (
+                  <p className="font-mono text-[12.5px] text-neutral-400">{entry.when}</p>
+                )}
+              </div>
+              <p className="mt-1 text-[15px] leading-relaxed text-neutral-600">{entry.detail}</p>
             </li>
           ))}
         </ul>

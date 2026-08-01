@@ -148,8 +148,10 @@
     backdrop a few pixels, and a blur wide enough to cross that distance averages the difference
     straight back out. Against a hard-edged test pattern, `blur(6px)` erased the lensing
     completely — the surface read as a frosted panel with no warp at all, whatever the
-    displacement was set to. So the Chromium line, which has the displacement, stays close to
-    clear. Real glass this thick is fairly clear anyway.
+    displacement was set to. So the Chromium line, which has the displacement, stays low: 3px is
+    enough frost to give the surface a body of its own and keep text over it legible, and the
+    displacement in `GlassLayer` was raised to 3.8×bevel to stay visible through it. Push this
+    much past 3px and the warp starts washing out again.
 
     The fallback line has no displacement to protect, so it keeps a proper frost — otherwise
     Safari and Firefox would get a nearly invisible pane instead of a surface.
@@ -164,9 +166,9 @@
   .glass,
   .glass-dark {
     position: relative;
-    backdrop-filter: blur(8px) saturate(1.9) brightness(1.06) contrast(1.08);
-    backdrop-filter: var(--glass-filter, blur(0px)) blur(1.5px) saturate(1.9) brightness(1.06)
-      contrast(1.08);
+    backdrop-filter: blur(10px) saturate(2) brightness(1.07) contrast(1.1);
+    backdrop-filter: var(--glass-filter, blur(0px)) blur(3px) saturate(2) brightness(1.07)
+      contrast(1.1);
     transition:
       box-shadow 0.2s,
       background-color 0.2s,
@@ -237,14 +239,14 @@
     are gone; `::before` above does that job with a gradient instead of flatly.
   */
   .glass {
-    background-color: rgb(255 255 255 / 0.16);
+    background-color: rgb(255 255 255 / 0.2);
     box-shadow:
       inset 0 0 0 1px rgb(0 0 0 / 0.11),
       0 4px 14px rgb(0 0 0 / 0.07);
   }
 
   .glass:hover {
-    background-color: rgb(255 255 255 / 0.24);
+    background-color: rgb(255 255 255 / 0.28);
     box-shadow:
       inset 0 0 0 1px rgb(0 0 0 / 0.16),
       0 6px 20px rgb(0 0 0 / 0.1);
@@ -292,6 +294,58 @@
     .glass,
     .glass-dark {
       transition: none;
+    }
+  }
+
+  /*
+    A reveal whose fade is shorter than its travel.
+
+    `animate-in` can't express this: one duration drives opacity and translate together, so a step
+    can only finish arriving and finish moving at the same instant. The Me panel wants the name to
+    be fully legible while it's still rising — that's the moment the line under it is allowed to
+    appear — so the two need separate clocks. Two animations on one element, two durations.
+
+    `translate` rather than a `transform` translate, so a transform set elsewhere on the same
+    element survives. The lift curve overshoots nothing and decelerates hard: it should look like
+    something settling into place, not like a slide with a stop at the end.
+  */
+  @keyframes reveal-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes reveal-lift {
+    from {
+      translate: 0 1rem;
+    }
+    to {
+      translate: 0 0;
+    }
+  }
+
+  .reveal-lift {
+    animation:
+      reveal-fade var(--reveal-fade, 340ms) ease-out both,
+      reveal-lift var(--reveal-lift, 480ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /*
+    The same fade without the travel, for a step whose length is set against another step's rather
+    than picked — `duration-*` is a fixed class, and a length derived from two constants isn't one.
+  */
+  .reveal-fade {
+    animation: reveal-fade var(--reveal-fade, 340ms) ease-out both;
+  }
+
+  /* Not a `motion-reduce:` utility, so it needs saying here. */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-lift,
+    .reveal-fade {
+      animation: none;
     }
   }
 }

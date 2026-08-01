@@ -18,6 +18,7 @@ export function BackHome() {
       aria-label={`Back to ${profile.name}'s home page`}
       className="glass fixed left-1/2 top-0 z-50 flex size-14 -translate-x-1/2 items-center justify-center rounded-b-2xl hover:h-[60px]"
       data-glass
+      suppressHydrationWarning
     >
       <span className="relative size-9 overflow-hidden rounded-full">
         <Image

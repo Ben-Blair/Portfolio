@@ -7,14 +7,18 @@ order: 1
 status: Running on a Pi in my room
 accent: "#0f766e"
 tags: [Computer Vision, PyTorch, Anomalib, OpenCV, Raspberry Pi, Edge ML]
-cover: /media/video-monitoring/cover.svg
+cover: /media/video-monitoring/frame-1.webp
 links:
   - { label: GitHub, href: "https://github.com/Ben-Blair" }
 media:
-  - type: image
-    src: /media/video-monitoring/cover.svg
-    alt: Detection pipeline diagram
-    caption: "TODO: replace with a real frame from the pipeline — a detection overlay screenshot reads best here."
+  - type: carousel
+    items:
+      - src: /media/video-monitoring/frame-1.webp
+        alt: Detection pipeline — frame 1
+      - src: /media/video-monitoring/frame-2.webp
+        alt: Detection pipeline — frame 2
+      - src: /media/video-monitoring/frame-3.webp
+        alt: Detection pipeline — frame 3
 ---
 
 A real-time video pipeline that watches a live camera feed, finds what it cares about, and decides

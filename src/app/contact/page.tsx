@@ -18,20 +18,19 @@ export default function ContactPage() {
         Get in touch
       </h1>
 
-      <p className="mt-5 text-[17px] leading-relaxed text-neutral-700">
-        I&apos;m looking for internships and new-grad roles where I can work on computer vision,
-        3D, embedded systems, or anything that touches real hardware. If that&apos;s you,
-        I&apos;d like to hear about it.
-      </p>
-
-      <p className="mt-4 text-[17px] leading-relaxed text-neutral-700">
-        Email is the fastest way to reach me. I read everything.
-      </p>
+      <div className="mt-5 space-y-4">
+        {profile.contact.map((paragraph) => (
+          <p key={paragraph} className="text-[17px] leading-relaxed text-neutral-700">
+            {paragraph}
+          </p>
+        ))}
+      </div>
 
       <a
         href={`mailto:${profile.email}`}
         className="glass-dark mt-8 inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 text-[15px] font-medium text-white"
         data-glass
+        suppressHydrationWarning
       >
         <Mail className="size-4" />
         {profile.email}

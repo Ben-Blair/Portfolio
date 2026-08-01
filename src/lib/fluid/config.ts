@@ -55,7 +55,7 @@ export const FLUID_CONFIG: FluidConfig = {
    * Above 1 a splat expands once and then largely stops, which is what keeps ribbons thin:
    * dye never gets smeared across the whole canvas.
    */
-  VELOCITY_DISSIPATION: 3.4,
+  VELOCITY_DISSIPATION: 3.21,
 
   /**
    * Jacobi iterations for the pressure solve. More = less divergence, more GPU. Upstream uses
@@ -79,7 +79,7 @@ export const FLUID_CONFIG: FluidConfig = {
    * lay down ribbons with actual edges, which is what the lensing and the colour fringing have
    * to work with.
    */
-  SPLAT_RADIUS: 0.11,
+  SPLAT_RADIUS: 0.18,
 
   /** How hard a cursor move shoves the fluid. */
   SPLAT_FORCE: 6200,

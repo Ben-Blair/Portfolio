@@ -1,0 +1,54 @@
+---
+title: Presence Scan
+tagline: A live mmWave radar turns a real person walking my garage into a glowing orb inside its 3D scan.
+date: 2026-07-31
+featured: true
+order: 0
+status: Deployed to GitHub Pages
+accent: "#0891b2"
+tags: [PlayCanvas, WebGL, mmWave Radar, ESP32, WebSocket, Gaussian Splatting]
+links:
+  - { label: GitHub, href: "https://github.com/Ben-Blair/presence-scan" }
+  - { label: Live Demo, href: "https://ben-blair.github.io/presence-scan/" }
+media:
+  - type: video
+    src: /media/presence-scan/demo.mp4
+    poster: /media/presence-scan/poster.jpg
+    loop: true
+    autoplay: true
+---
+
+This is the deployed answer to the question **mmWave Map** ended on: what happens when the splat
+and the radar actually get wired together. The clip above is a walkthrough — the live build is
+linked above if you want to drive it yourself.
+
+Under the hood it's a 3D Gaussian-splat scan of my garage, rendered directly on **PlayCanvas** (no
+editor, no app framework — just the engine). A custom-firmware **HLK/LD2450 mmWave radar** on an
+ESP32 parses raw sensor frames and serves them over its own WebSocket — no bridge, no ESPHome —
+one packet per person per tick, in millimetres:
+
+```json
+{"targets":[{"x":-820,"y":1740,"speed":-12}]}
+```
+
+The viewer connects straight to that socket, maps sensor space onto splat space through an
+origin/rotation/scale calibration, and eases a glowing orb toward wherever you're actually
+standing in the room. Up to three people track as three independent orbs.
+
+## Wall cutaway
+
+Splats don't have geometry to hide behind, so a full walkthrough of a garage from outside would
+just show you the outside of the walls. A custom shader chunk fades walls between the camera and
+the orb whenever the camera leaves the room, so tracking a person from any angle still reads as
+looking *into* a space rather than at a box.
+
+## Calibrating a real radar to a real room
+
+The trickiest part wasn't the rendering, it was getting sensor-space and splat-space to agree.
+The settings panel has a dedicated alignment mode: a floor radar overlay with range rings, a live
+marker on both the texture and the 3D scene, and keyboard controls to pan/rotate/scale the sensor
+mount until the dot tracks your actual feet. Once it's set, it saves to the session and persists
+across reloads.
+
+Lint, typecheck, and tests gate the GitHub Pages deploy in CI, so what's embedded above is exactly
+what shipped.
