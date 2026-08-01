@@ -2,17 +2,18 @@
 
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
-import { ArrowRight, ChevronDown, ChevronUp, Info, Sparkles, Square } from "lucide-react";
+import { ArrowRight, Info, Sparkles, Square } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { Answer, TypingDots, withoutPartialBold, wordBoundary } from "@/components/chat/Answer";
+import { DockShell } from "@/components/chat/DockShell";
 import { ErrorLine } from "@/components/chat/ErrorLine";
-import { PillRow } from "@/components/chat/PillRow";
 import { QuestionBubble } from "@/components/chat/QuestionBubble";
 import { PANELS } from "@/components/chat/blocks/panels";
 import { chatHref } from "@/components/chat/href";
 import { PanelAnswer } from "@/components/chat/reveal";
+import { PANEL_EXIT_MS, PANEL_THINKING_MS } from "@/components/chat/timing";
 import { useReducedMotion } from "@/components/chat/useReducedMotion";
 import { useTypewriter } from "@/components/chat/useTypewriter";
 import {
@@ -25,28 +26,6 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { profile } from "@content/profile";
-
-/**
- * How long a panel sits on the typing dots before it starts answering.
- *
- * A written answer is ready the instant you click, and showing it that way makes the pill feel
- * like a link again — the bubble would be on screen for a single frame. The pause is the model
- * thinking, except there's no model: it costs nothing and it's what makes the turn read as a
- * reply. Roughly the time to the model's first token on a real question.
- */
-const PANEL_THINKING_MS = 550;
-
-/**
- * How long the question and the dots take to clear out before the answer starts arriving.
- *
- * They used to leave on the same frame the answer landed, which meant the two motions were
- * happening on top of each other and neither read as causing the other. Given a beat to itself,
- * the turn has three parts you can actually follow: asked, thought about, answered.
- *
- * Matched by hand in `QuestionBubble`'s `lift` mode and `TypingDots` — CSS transitions can't read
- * a constant, and a style prop for two numbers that never change independently isn't worth it.
- */
-const PANEL_EXIT_MS = 440;
 
 /**
  * The last thing `role` said, with its text parts joined — one reply can arrive as several.
@@ -78,7 +57,6 @@ export function ChatView() {
   const panel = PANELS[panelKey];
 
   const [input, setInput] = useState("");
-  const [showPills, setShowPills] = useState(true);
 
   // The written answer's equivalent of waiting on a first token, then clearing the screen for it.
   // Keyed off the panel so moving pill to pill takes both beats again rather than cutting straight
@@ -102,13 +80,6 @@ export function ChatView() {
     const timer = setTimeout(() => setAnswered(panelKey), reduced ? 0 : PANEL_EXIT_MS);
     return () => clearTimeout(timer);
   }, [exiting, panelKey, reduced]);
-
-  // Some panels (Projects) have no written answer at all — the thinking beat plays out the same
-  // way, but instead of revealing a `Block` it hands off to the real page once the dots have
-  // finished clearing, rather than ever rendering an inline answer.
-  useEffect(() => {
-    if (answering && panel && "redirectTo" in panel) router.push(panel.redirectTo);
-  }, [answering, panel, router]);
 
   const { messages, sendMessage, status, error, stop, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
@@ -191,18 +162,18 @@ export function ChatView() {
             <div>
               <QuestionBubble question={panel.question} hidden={exiting || answering} lift />
 
-              {answering && panel && "Block" in panel ? (
+              {answering ? (
                 <PanelAnswer key={panelKey}>
                   <panel.Block />
                 </PanelAnswer>
-              ) : answering ? null : (
+              ) : (
                 // The same `1fr → 0fr` close the question is doing above it, so both are out of
                 // the layout by the frame the answer mounts. `min-h-0` rather than
                 // `overflow-hidden`: the dots leave downward, and clipping them to a row that's
                 // shutting would eat the motion that says they left.
                 <div
                   aria-hidden="true"
-                  className="grid transition-[grid-template-rows] duration-[440ms] ease-in-out motion-reduce:transition-none"
+                  className="grid transition-[grid-template-rows] duration-[220ms] ease-in-out motion-reduce:transition-none"
                   style={{ gridTemplateRows: exiting ? "0fr" : "1fr" }}
                 >
                   <div className="min-h-0">
@@ -265,78 +236,56 @@ export function ChatView() {
         </div>
       </div>
 
-      {/* Sticky rather than fixed so it can't cover the end of a long answer. */}
-      <div className="sticky bottom-0 z-20 bg-white/85 px-5 pb-5 pt-3 backdrop-blur-md">
+      {/* Sticky rather than fixed so it can't cover the end of a long answer. The wrapper fades to
+          transparent instead of laying down an opaque slab: the dock's glass has to have something
+          behind it to bend, and a white plate is the one backdrop that makes the material vanish.
+          No blur here either — the dock does its own, and blurring twice flattens it. */}
+      <div className="sticky bottom-0 z-20 bg-gradient-to-t from-white via-white/85 to-transparent px-5 pb-5 pt-10">
         <div className="mx-auto max-w-2xl">
-          <div className="flex justify-center">
-            <button
-              type="button"
-              onClick={() => setShowPills((shown) => !shown)}
-              aria-expanded={showPills}
-              className="flex items-center gap-1 rounded-full px-2 py-1 text-[12.5px] text-neutral-400 transition-colors hover:text-neutral-700"
+          {/* Always on screen: the pills are the site's only navigation, so they belong to the
+              dock the same way the input does rather than being something you have to open. */}
+          <DockShell activePanel={panelKey}>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                ask(input);
+              }}
+              className="relative flex items-center"
             >
-              {showPills ? (
-                <ChevronDown className="size-3.5" />
-              ) : (
-                <ChevronUp className="size-3.5" />
-              )}
-              {showPills ? "Hide quick questions" : "Quick questions"}
-            </button>
-          </div>
-
-          {showPills && (
-            <PillRow
-              variant="inline"
-              className="mt-2"
-              trailing={
-                <button
-                  type="button"
-                  onClick={() => {
-                    // Never re-ask what's already on screen, so the button always changes something.
-                    const options = profile.suggestedPrompts.filter((prompt) => prompt !== query);
-                    ask(options[Math.floor(Math.random() * options.length)] ?? "");
-                  }}
-                  aria-label="Ask me something random"
-                  className="glass flex size-10 items-center justify-center rounded-full text-neutral-500 hover:-translate-y-0.5 hover:text-neutral-900"
-                  data-glass
-                  suppressHydrationWarning
-                >
-                  <Sparkles className="size-4" />
-                </button>
-              }
-            />
-          )}
-
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              ask(input);
-            }}
-            className="glass relative mt-3 flex items-center rounded-full focus-within:shadow-[inset_0_0_0_1px_rgb(0_0_0/0.16),0_6px_24px_rgb(0_0_0/0.12)]"
-            data-glass
-            suppressHydrationWarning
-          >
-            <input
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              placeholder="Ask me anything..."
-              aria-label={`Ask ${profile.name} anything`}
-              className="w-full flex-1 rounded-full bg-transparent py-3.5 pl-6 pr-14 text-[15px] text-neutral-800 outline-none placeholder:text-neutral-600"
-            />
-            <button
-              type={busy ? "button" : "submit"}
-              onClick={busy ? () => stop() : undefined}
-              disabled={!busy && !input.trim()}
-              aria-label={busy ? "Stop generating" : "Send"}
-              className="absolute right-2 flex size-10 items-center justify-center rounded-full bg-blue-600 text-white transition-all hover:bg-blue-700 disabled:bg-[#609cec] disabled:hover:bg-[#609cec]"
-            >
-              {busy ? (
-                <Square className="size-3.5 fill-current" />
-              ) : (
-                <ArrowRight className="size-4" />
-              )}
-            </button>
-          </form>
+              <input
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                placeholder="Ask me anything..."
+                aria-label={`Ask ${profile.name} anything`}
+                className="w-full flex-1 rounded-full bg-transparent py-3.5 pl-4 pr-24 text-[15px] text-neutral-800 outline-none placeholder:text-neutral-600"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  // Never re-ask what's already on screen, so the button always changes something.
+                  const options = profile.suggestedPrompts.filter((prompt) => prompt !== query);
+                  ask(options[Math.floor(Math.random() * options.length)] ?? "");
+                }}
+                aria-label="Ask me something random"
+                className="absolute right-12 flex size-9 items-center justify-center rounded-full text-neutral-400 transition-colors hover:text-neutral-800"
+              >
+                <Sparkles className="size-4" />
+              </button>
+              <button
+                type={busy ? "button" : "submit"}
+                onClick={busy ? () => stop() : undefined}
+                disabled={!busy && !input.trim()}
+                aria-label={busy ? "Stop generating" : "Send"}
+                className="absolute right-2 flex size-10 items-center justify-center rounded-full bg-blue-600 text-white transition-all hover:bg-blue-700 disabled:bg-[#609cec] disabled:hover:bg-[#609cec]"
+              >
+                {busy ? (
+                  <Square className="size-3.5 fill-current" />
+                ) : (
+                  <ArrowRight className="size-4" />
+                )}
+              </button>
+            </form>
+          </DockShell>
         </div>
       </div>
     </div>

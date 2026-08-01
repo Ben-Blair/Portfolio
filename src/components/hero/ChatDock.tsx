@@ -1,11 +1,13 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { DockShell } from "@/components/chat/DockShell";
 import { chatHref } from "@/components/chat/href";
 import { PillRow } from "@/components/chat/PillRow";
+import { cn } from "@/lib/utils";
 import { profile } from "@content/profile";
 
 /**
@@ -15,10 +17,15 @@ import { profile } from "@content/profile";
  * The hero is one viewport with a headline in it and no room to grow a conversation, and putting
  * the question in the URL makes every answer linkable.
  *
+ * `variant="hero"` is the tall version: suggested prompts under the input, stacked pills under
+ * those. `variant="bar"` is the sticky bottom bar a content page sits above — the same `DockShell`
+ * the chat page renders, so leaving `/chat` for `/projects` doesn't change the furniture: one
+ * surface with the pill row inside it, not four suggested questions.
+ *
  * If no model key is configured the route reports that up front and the input renders a
  * disabled, honest offline state instead of sending anyone to a page that can only fail.
  */
-export function ChatDock() {
+export function ChatDock({ variant = "hero" }: { variant?: "hero" | "bar" }) {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [configured, setConfigured] = useState<boolean | null>(null);
@@ -44,84 +51,136 @@ export function ChatDock() {
     router.push(chatHref(trimmed));
   }
 
+  const bar = variant === "bar";
+
+  /**
+   * Inside the field rather than trailing the pill row. In the row it was a sixth item with no
+   * label among five that had one, which read as a stray control; next to Send it reads as what it
+   * is — the other way to fill the input.
+   */
+  const randomButton = (
+    <button
+      type="button"
+      onClick={() => {
+        const prompts = profile.suggestedPrompts;
+        submit(prompts[Math.floor(Math.random() * prompts.length)] ?? "");
+      }}
+      aria-label="Ask me something random"
+      className="absolute right-12 flex size-9 items-center justify-center rounded-full text-neutral-400 transition-colors hover:text-neutral-800"
+    >
+      <Sparkles className="size-4" />
+    </button>
+  );
+
+  /**
+   * The bar puts its field on the shell's surface, so the field itself is bare — a second glass
+   * layer inside the first would only fight it. The hero's field is the surface.
+   */
+  const fieldClass = bar
+    ? "relative flex items-center"
+    : "glass group relative flex items-center rounded-full focus-within:shadow-[inset_0_0_0_1px_rgb(0_0_0/0.16),0_6px_24px_rgb(0_0_0/0.12)]";
+  const fieldProps = bar ? {} : { "data-glass": "", suppressHydrationWarning: true };
+
   if (configured === false) {
+    /* Deliberately the same field and the same blue circle as the live form. When the model key
+       is missing this is still the one place to put a question — it just reaches a person instead
+       of a model, so it shouldn't announce itself as a different control. */
+    const offline = (
+      <div className={cn(fieldClass, !bar && "text-left")} {...fieldProps}>
+        <p
+          className={cn(
+            "flex-1 text-[15px] text-neutral-400",
+            bar ? "py-3.5 pl-4 pr-14" : "py-4 pl-6 pr-14",
+          )}
+        >
+          Chat is offline — email me instead.
+        </p>
+        <a
+          href={`mailto:${profile.email}`}
+          aria-label={`Email ${profile.name}`}
+          className="absolute right-2 flex size-10 items-center justify-center rounded-full bg-blue-600 text-white transition-all hover:bg-blue-700"
+        >
+          <ArrowRight className="size-4" />
+        </a>
+      </div>
+    );
+
     return (
-      <div className="w-full max-w-xl">
-        {/* Deliberately the same pill and the same blue circle as the live form below. When the
-            model key is missing this is still the one place to put a question — it just reaches a
-            person instead of a model, so it shouldn't announce itself as a different control. */}
-        <div className="glass relative flex items-center rounded-full text-left" data-glass suppressHydrationWarning>
-          <p className="flex-1 py-4 pl-6 pr-14 text-[15px] text-neutral-400">
-            Chat is offline — email me instead.
-          </p>
-          <a
-            href={`mailto:${profile.email}`}
-            aria-label={`Email ${profile.name}`}
-            className="absolute right-2 flex size-10 items-center justify-center rounded-full bg-blue-600 text-white transition-all hover:bg-blue-700"
-          >
-            <ArrowRight className="size-4" />
-          </a>
-        </div>
+      <div className={bar ? "w-full max-w-2xl" : "w-full max-w-xl"}>
+        {bar ? <DockShell>{offline}</DockShell> : offline}
         <p className="mt-2 px-5 text-[12.5px] text-neutral-400">
           Set <code className="font-mono">GOOGLE_GENERATIVE_AI_API_KEY</code> in{" "}
           <code className="font-mono">.env.local</code> to turn it on.
         </p>
-        <PillRow className="mt-4" />
+        {!bar && <PillRow className="mt-4" />}
       </div>
     );
   }
 
-  return (
-    <div className="w-full max-w-xl">
-      {/* The focus ring keeps .glass's dark hairline and just deepens the lift, so focusing the
-          input doesn't wipe out the edge the rest of the surface is drawn against. */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit(input);
-        }}
-        className="glass group relative flex items-center rounded-full focus-within:shadow-[inset_0_0_0_1px_rgb(0_0_0/0.16),0_6px_24px_rgb(0_0_0/0.12)]"
-        data-glass
-        suppressHydrationWarning
+  const form = (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit(input);
+      }}
+      className={fieldClass}
+      {...fieldProps}
+    >
+      <input
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder="Ask me anything..."
+        aria-label={`Ask ${profile.name} anything`}
+        disabled={configured === null}
+        className={cn(
+          "w-full flex-1 select-text rounded-full bg-transparent text-[15px] text-neutral-800 outline-none placeholder:text-neutral-600 disabled:cursor-wait",
+          // The bar sits under a page rather than in the middle of the hero, so it matches the
+          // chat page's slightly shorter input — and leaves room for the two buttons in its field.
+          bar ? "py-3.5 pl-4 pr-24" : "py-4 pl-6 pr-14",
+        )}
+      />
+      {bar && randomButton}
+      {/* Disabled is a lighter blue rather than grey: with nothing typed the button is the main
+          thing pointing at the empty input, so it should still read as the action you're meant
+          to take, just not yet armed. */}
+      <button
+        type="submit"
+        disabled={configured === null || !input.trim()}
+        aria-label="Send"
+        className="absolute right-2 flex size-10 items-center justify-center rounded-full bg-blue-600 text-white transition-all hover:bg-blue-700 disabled:bg-[#609cec] disabled:hover:bg-[#609cec]"
       >
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask me anything..."
-          aria-label={`Ask ${profile.name} anything`}
-          disabled={configured === null}
-          className="w-full flex-1 select-text rounded-full bg-transparent py-4 pl-6 pr-14 text-[15px] text-neutral-800 outline-none placeholder:text-neutral-600 disabled:cursor-wait"
-        />
-        {/* Disabled is a lighter blue rather than grey: with nothing typed the button is the main
-            thing pointing at the empty input, so it should still read as the action you're meant
-            to take, just not yet armed. */}
-        <button
-          type="submit"
-          disabled={configured === null || !input.trim()}
-          aria-label="Send"
-          className="absolute right-2 flex size-10 items-center justify-center rounded-full bg-blue-600 text-white transition-all hover:bg-blue-700 disabled:bg-[#609cec] disabled:hover:bg-[#609cec]"
-        >
-          <ArrowRight className="size-4" />
-        </button>
-      </form>
+        <ArrowRight className="size-4" />
+      </button>
+    </form>
+  );
 
-      <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-        {profile.suggestedPrompts.map((prompt) => (
-          <button
-            key={prompt}
-            type="button"
-            onClick={() => submit(prompt)}
-            className="glass rounded-full px-3 py-1.5 text-[12.5px] text-neutral-500 hover:text-neutral-900"
-            data-glass
-            suppressHydrationWarning
-          >
-            {prompt}
-          </button>
-        ))}
-      </div>
+  return (
+    <div className={bar ? "w-full max-w-2xl" : "w-full max-w-xl"}>
+      {bar ? (
+        <DockShell>{form}</DockShell>
+      ) : (
+        <>
+          {form}
 
-      {/* Below the input so the suggested prompts stay glued to the box they feed. */}
-      <PillRow className="mt-4" />
+          <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+            {profile.suggestedPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => submit(prompt)}
+                className="glass rounded-full px-3 py-1.5 text-[12.5px] text-neutral-500 hover:text-neutral-900"
+                data-glass
+                suppressHydrationWarning
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+
+          {/* Below the input so the suggested prompts stay glued to the box they feed. */}
+          <PillRow className="mt-4" />
+        </>
+      )}
     </div>
   );
 }

@@ -38,17 +38,27 @@ export function VideoBlock({ src, poster, loop, autoplay, controls, caption }: V
 
   return (
     <figure className="not-prose">
-      <video
-        ref={ref}
-        src={src}
-        poster={poster}
-        loop={loop}
-        controls={controls}
-        muted
-        playsInline
-        preload="metadata"
-        className="aspect-video w-full rounded-2xl border border-neutral-200 bg-neutral-900"
-      />
+      {/* The frame is the wrapper's, not the video's — the same arrangement `YouTubeBlock` and
+          `LivePhotoBlock` use below, and for a reason that shows up as a black fringe when it
+          isn't. `aspect-video` applies 16/9 to the border box, so a 1px border leaves a content
+          box of 1.783:1 for a 1.778:1 file: `object-fit: contain` then centres the picture with a
+          sub-pixel bar of `bg-neutral-900` down each side, widening into a dark crescent wherever
+          the corner radius cuts in. Cropping to the box instead of fitting inside it means the
+          background has nothing left to show through, and clipping on an ordinary element rather
+          than on the video itself keeps the corners off the compositor's rounding. */}
+      <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-900">
+        <video
+          ref={ref}
+          src={src}
+          poster={poster}
+          loop={loop}
+          controls={controls}
+          muted
+          playsInline
+          preload="metadata"
+          className="absolute inset-0 size-full object-cover"
+        />
+      </div>
       {caption && <figcaption className="mt-2 text-[13px] text-neutral-500">{caption}</figcaption>}
     </figure>
   );

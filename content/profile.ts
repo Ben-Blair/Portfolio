@@ -70,15 +70,20 @@ export const profile = {
    *
    * A pill with a `panel` opens `/chat?panel=<panel>`, which answers inline instead of leaving
    * the chat; the panel then links on to `href`, the full page behind the same content. Drop the
-   * `panel` and the pill goes straight to `href` — right whenever a summary would just be a stop
-   * on the way, the way Projects already has a page built to be browsed.
+   * `panel` and the pill goes straight to `href`.
+   *
+   * Projects is the one that does that. It has a page built to be browsed rather than summarized,
+   * so instead of answering in the chat and then sending you on, it plays the same turn — the
+   * question, the thinking beat, the answer — at the top of `/projects` itself, where the answer
+   * can point down at the sections it's describing. `?ask=1` is what asks for that turn; without
+   * it the page is just the page.
    *
    * Adding a panel means adding a matching entry in `src/components/chat/blocks/panels.tsx`.
    * `color` tints just the icon.
    */
   pills: [
     { label: "Me", icon: "smile", panel: "me", href: "/about", color: "#329696" },
-    { label: "Projects", icon: "briefcase", panel: "projects", href: "/projects", color: "#3e9858" },
+    { label: "Projects", icon: "briefcase", href: "/projects?ask=1", color: "#3e9858" },
     { label: "Skills", icon: "layers", panel: "skills", href: "/skills", color: "#866eda" },
     { label: "Fun", icon: "party", panel: "fun", href: "/fun", color: "#ba5f9d" },
     { label: "Contact", icon: "user-search", panel: "contact", href: "/contact", color: "#c19433" },

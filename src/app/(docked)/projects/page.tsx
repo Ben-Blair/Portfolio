@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { ProjectRail } from "@/components/projects/ProjectRail";
-import { ProjectSection } from "@/components/projects/ProjectSection";
+import { ProjectsReveal } from "@/components/projects/ProjectsReveal";
 import { BackHome } from "@/components/site/BackHome";
 import { getProjects } from "@/lib/content";
 
@@ -10,7 +10,21 @@ export const metadata: Metadata = {
   description: "Computer vision, 3D capture, embedded systems, and full-stack work.",
 };
 
-export default function ProjectsPage() {
+/**
+ * `?ask=1` — set by the Projects pill — asks the page to answer the question that brought you
+ * here before it shows you the answer. Anything else (a bare link, a rail anchor, a refresh, the
+ * back button) gets the page on its own. See `src/components/projects/ProjectsIntro.tsx`.
+ *
+ * `searchParams` is a Promise in this version of Next and makes the page dynamic. That's fine
+ * for seven MDX files read through a `cache()`d reader, and it's what buys a server-rendered
+ * decision instead of a hydration flash.
+ */
+export default async function ProjectsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const asked = (await searchParams).ask === "1";
   const projects = getProjects();
 
   if (projects.length === 0) {
@@ -33,21 +47,7 @@ export default function ProjectsPage() {
 
       <ProjectRail projects={projects.map((p) => ({ slug: p.slug, title: p.title }))} />
 
-      {/*
-        `snap-proximity` rather than `snap-mandatory`: mandatory snapping fights the user on
-        trackpads and long sections. This nudges without trapping. It's disabled entirely for
-        touch and reduced-motion in globals.css.
-      */}
-      <div className="snap-y snap-proximity">
-        {projects.map((project, index) => (
-          <ProjectSection
-            key={project.slug}
-            project={project}
-            index={index}
-            total={projects.length}
-          />
-        ))}
-      </div>
+      <ProjectsReveal projects={projects} asked={asked} />
     </>
   );
 }

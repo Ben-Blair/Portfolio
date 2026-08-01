@@ -82,18 +82,12 @@ export default function AboutPage() {
           ))}
         </ul>
 
+        {/* Only the resume. Projects has a pill in the dock a few pixels below this; the resume
+            doesn't, so this is the one link here that goes somewhere the nav can't. */}
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
-            href="/projects"
-            className="glass-dark inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[14px] font-medium text-white"
-            data-glass
-            suppressHydrationWarning
-          >
-            See the projects
-          </Link>
-          <Link
             href="/resume"
-            className="glass inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[14px] font-medium text-neutral-700"
+            className="glass-dark inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[14px] font-medium text-white"
             data-glass
             suppressHydrationWarning
           >

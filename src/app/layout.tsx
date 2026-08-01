@@ -62,8 +62,8 @@ export default function RootLayout({
         {/* Gives the glass something to refract on sub-pages. The hero paints its own white base
             over this and runs the fluid sim instead. */}
         <PageBackdrop />
-        {/* No site chrome by design: the hero's pill row is the only navigation, and every
-            sub-page carries its own <BackHome /> link. */}
+        {/* No site chrome by design. Navigation is the pill row, which the hero spreads out below
+            its input and every other page carries in the dock — see `app/(docked)/layout.tsx`. */}
         <main className="flex-1">{children}</main>
         {/* Builds the refraction filters behind every `.glass` surface. Renders nothing visible. */}
         <GlassLayer />

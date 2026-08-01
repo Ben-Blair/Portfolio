@@ -348,20 +348,10 @@
       animation: none;
     }
   }
+
 }
 
 @layer base {
-  /*
-    Scroll snapping on /projects is a nice nudge with a mouse wheel or trackpad, but on a
-    touchscreen it fights the user's flick and makes long sections feel sticky. Same for
-    anyone who has asked for reduced motion. Turn it off for both.
-  */
-  @media (pointer: coarse), (prefers-reduced-motion: reduce) {
-    .snap-y {
-      scroll-snap-type: none;
-    }
-  }
-
   /* Anchor jumps from the project rail shouldn't land flush against the viewport edge. */
   :target {
     scroll-margin-top: 1rem;
