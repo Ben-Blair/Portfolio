@@ -133,7 +133,7 @@ export function ProjectsIntro({ onSettled }: { onSettled: () => void }) {
                 that says they left. */}
             <div
               aria-hidden="true"
-              className="grid transition-[grid-template-rows] duration-[220ms] ease-in-out motion-reduce:transition-none"
+              className="grid transition-[grid-template-rows] duration-[360ms] ease-in-out motion-reduce:transition-none"
               style={{ gridTemplateRows: exiting ? "0fr" : "1fr" }}
             >
               <div className="min-h-0">

@@ -96,7 +96,7 @@ export const FLUID_CONFIG: FluidConfig = {
    * Overall opacity of the whole canvas, and the counterweight to SPLAT_INTENSITY above.
    * Low on purpose: the headline sits directly on top of this and has to stay readable.
    */
-  OPACITY: 0.2,
+  OPACITY: 0.14,
 
   /**
    * Strength of the fake directional light on the dye gradient, which gives ribbons a lit

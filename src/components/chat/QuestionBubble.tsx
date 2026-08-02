@@ -33,7 +33,7 @@ export function QuestionBubble({
       className={cn(
         "grid transition-[grid-template-rows] ease-in-out motion-reduce:transition-none",
         // Matched to PANEL_EXIT_MS, so the gap is shut on the frame the answer mounts.
-        lift ? "duration-[220ms]" : "duration-[380ms]",
+        lift ? "duration-[360ms]" : "duration-[380ms]",
       )}
       style={{ gridTemplateRows: hidden ? "0fr" : "1fr" }}
     >
@@ -45,7 +45,7 @@ export function QuestionBubble({
           // `min-h-0` is what lets the row shrink past its content once the crushing job isn't
           // being done by `overflow-hidden` — a grid item's automatic minimum size is its content
           // otherwise, and the row would refuse to close.
-          lift ? "min-h-0 duration-[220ms]" : "overflow-hidden duration-200",
+          lift ? "min-h-0 duration-[360ms]" : "overflow-hidden duration-200",
           hidden ? "opacity-0" : "opacity-100",
         )}
       >
@@ -56,7 +56,7 @@ export function QuestionBubble({
             "flex justify-end pb-8",
             lift &&
               cn(
-                "transition-transform duration-[220ms] ease-out motion-reduce:transition-none",
+                "transition-transform duration-[360ms] ease-out motion-reduce:transition-none",
                 hidden && "-translate-y-4",
               ),
           )}

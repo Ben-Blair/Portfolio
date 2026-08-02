@@ -83,6 +83,16 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /*
+    An underdamped spring, sampled. Overshoots by ~5% around the halfway mark and settles without
+    a second visible bounce — enough that the thing it moves reads as having mass, not so much
+    that it reads as a bounce effect.
+
+    `linear()` rather than a `cubic-bezier`: a bezier can't leave the 0–1 range on the output axis,
+    so overshoot is the one curve shape it structurally cannot express.
+  */
+  --ease-lens: linear(0, 0.14 8%, 0.5 20%, 0.83 32%, 1.02 44%, 1.05 52%, 1.01 68%, 0.998 84%, 1);
 }
 
 .dark {
@@ -187,12 +197,22 @@
     whatever the call site sets, including `rounded-full`.
   */
   .glass::before,
-  .glass-dark::before {
+  .glass-dark::before,
+  .glass-lens::before {
     content: "";
     position: absolute;
     inset: 0;
     z-index: 1;
     border-radius: inherit;
+    /*
+      `corner-shape` is not an inherited property, so a pseudo-element on a squircle-cornered
+      surface silently goes back to a circular arc — and then the ring traces a different curve
+      than the fill it's supposed to edge. Where the two disagree you get the ring's own
+      semi-transparent white sitting on the page instead of on the surface, which over anything
+      dark reads as a black crescent hugging the corner. Inherit it explicitly, next to the radius,
+      for the same reason the radius is inherited.
+    */
+    corner-shape: inherit;
     padding: 1px;
     pointer-events: none;
     -webkit-mask:
@@ -205,7 +225,8 @@
     mask-composite: exclude;
   }
 
-  .glass::before {
+  .glass::before,
+  .glass-lens::before {
     background: linear-gradient(
       145deg,
       rgb(255 255 255 / 0.95) 0%,
@@ -266,6 +287,108 @@
     box-shadow: 0 6px 20px rgb(0 0 0 / 0.2);
   }
 
+  /*
+    The selection lozenge inside a glass surface — the thing that slides between the dock's pills.
+
+    Deliberately not `.glass`, and the reason is the same one in `PillRow`: a second
+    `backdrop-filter` over the first stacks two frosts and two rims on the same pixels, which is
+    what made the bar read as moulded plastic. It's also not how the material works. A pane of
+    glass doesn't refract twice because you highlighted part of it — the *surface* bends the
+    backdrop, and the selection is light landing on that surface. So this is fill, rim and shadow
+    only, and it gets its lensing for free from the shell it sits on.
+
+    Higher alpha than `.glass`'s 0.2 on purpose. This one isn't a window, it's a highlight, and it
+    has to separate from an already-white surface rather than from the page.
+  */
+  .glass-lens {
+    position: relative;
+    background-color: rgb(255 255 255 / 0.58);
+    box-shadow:
+      0 1px 3px rgb(0 0 0 / 0.07),
+      0 4px 10px rgb(0 0 0 / 0.05);
+  }
+
+  /*
+    Where the lozenge is and how it gets there. `PillRow` measures the current pill and writes the
+    four vars; the travel is here and the stretch is there.
+
+    `transform` carries the overshoot — a spring that goes ~5% past the target and comes back, so
+    the thing arrives with some weight behind it. `width` deliberately does not overshoot: a
+    lozenge that briefly grows wider than the label it's under reads as a mistake rather than as
+    momentum, so it gets a plain decelerating curve and a little longer to run.
+
+    The `scale` property is left alone here on purpose. `PillRow` drives it with a keyframed
+    animation whose amplitude depends on how far the lozenge is travelling, which is not something
+    a transition can express — see the note on `STRETCH_MAX` there for why the obvious
+    transition-only version doesn't work.
+  */
+  .lens-travel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--lens-w, 0px);
+    height: var(--lens-h, 0px);
+    transform: translate(var(--lens-x, 0px), var(--lens-y, 0px));
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Absent on pages with no current pill. Geometry is left where it was, so coming back to a
+     navigated page slides from the last place rather than teleporting out of the corner. */
+  .lens-travel[data-visible] {
+    opacity: 1;
+  }
+
+  /* Added only after the first measured commit — otherwise every page load animates it in from
+     (0, 0), which is the one movement it should never make. */
+  .lens-travel[data-travel] {
+    transition:
+      transform 420ms var(--ease-lens),
+      width 520ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 200ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* Still fades, still lands in the right place — it just doesn't travel to get there. */
+    .lens-travel[data-travel] {
+      transition: opacity 200ms ease;
+    }
+  }
+
+  /*
+    A highlight that follows the cursor across a surface, the way a real one catches a light you
+    move past it. `DockShell` writes `--px`/`--py` from pointer moves and drops `--sheen` to 0 on
+    leave, so the fade-out is the CSS transition rather than anything JS has to drive.
+
+    `z-index: -1` rather than 0, and it matters: a positioned pseudo-element paints in tree order
+    with the surface's own content, and `::after` is last, so at 0 a 200px white radial would sit
+    straight on top of the labels. Negative z paints after the element's background and before any
+    content, which is where a highlight on a surface belongs. It can't escape the shell because
+    `backdrop-filter` already made `.glass` a stacking context.
+  */
+  @media (hover: hover) {
+    .glass-sheen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      /* Same reason as the rim above — an unshaped corner here would clip the highlight square. */
+      corner-shape: inherit;
+      pointer-events: none;
+      opacity: var(--sheen, 0);
+      transition: opacity 0.3s;
+      /* Wide and weak. At 200px/0.45 this read as a torch pointed at the bar — a distinct bright
+         blob with an edge, which is a lighting effect rather than lighting. The surface should
+         look like it's *in* a room, so the falloff wants to be bigger than the thing it's on. */
+      background: radial-gradient(
+        280px circle at var(--px, 50%) var(--py, 0%),
+        rgb(255 255 255 / 0.3),
+        transparent 72%
+      );
+    }
+  }
+
   /* Transparency is the whole effect, so there's nothing to soften — go solid instead. */
   @media (prefers-reduced-transparency: reduce) {
     .glass,
@@ -274,7 +397,12 @@
     }
     /* A specular rim on an opaque pill is just noise — there's no glass left for it to light. */
     .glass::before,
-    .glass-dark::before {
+    .glass-dark::before,
+    .glass-lens::before {
+      display: none;
+    }
+    /* Nothing left for a moving highlight to be a highlight *on*. */
+    .glass-sheen::after {
       display: none;
     }
     .glass,
@@ -288,12 +416,20 @@
     .glass-dark:hover {
       background-color: rgb(24 24 27);
     }
+    /* On an opaque shell the lozenge has to go the other way to still read as selected. */
+    .glass-lens {
+      background-color: rgb(0 0 0 / 0.07);
+      box-shadow: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .glass,
     .glass-dark {
       transition: none;
+    }
+    .glass-sheen::after {
+      display: none;
     }
   }
 

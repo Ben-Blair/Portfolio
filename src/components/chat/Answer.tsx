@@ -215,7 +215,7 @@ export function TypingDots({ leaving = false }: { leaving?: boolean }) {
         "flex w-fit items-center gap-1.5 rounded-3xl rounded-bl-lg bg-neutral-100 px-4 py-3.5",
         // `translate`, not `transform`: Tailwind's `translate-y-*` sets the standalone property,
         // and a transition that only names `transform` lets the dots snap down instead of drift.
-        "transition-[opacity,translate] duration-[220ms] ease-out motion-reduce:transition-none",
+        "transition-[opacity,translate] duration-[360ms] ease-out motion-reduce:transition-none",
         leaving && "translate-y-4 opacity-0",
       )}
     >

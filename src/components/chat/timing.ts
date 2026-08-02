@@ -14,7 +14,7 @@
  * thinking, except there's no model: it costs nothing and it's what makes the turn read as a
  * reply. Roughly the time to the model's first token on a real question.
  */
-export const PANEL_THINKING_MS = 250;
+export const PANEL_THINKING_MS = 420;
 
 /**
  * How long the question and the dots take to clear out before the answer starts arriving.
@@ -26,4 +26,4 @@ export const PANEL_THINKING_MS = 250;
  * Matched by hand in `QuestionBubble`'s `lift` mode and `TypingDots` — CSS transitions can't read
  * a constant, and a style prop for two numbers that never change independently isn't worth it.
  */
-export const PANEL_EXIT_MS = 220;
+export const PANEL_EXIT_MS = 360;

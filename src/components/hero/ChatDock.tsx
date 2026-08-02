@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { DockShell } from "@/components/chat/DockShell";
 import { chatHref } from "@/components/chat/href";
@@ -29,6 +29,8 @@ export function ChatDock({ variant = "hero" }: { variant?: "hero" | "bar" }) {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [configured, setConfigured] = useState<boolean | null>(null);
+  const [focused, setFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,25 +54,6 @@ export function ChatDock({ variant = "hero" }: { variant?: "hero" | "bar" }) {
   }
 
   const bar = variant === "bar";
-
-  /**
-   * Inside the field rather than trailing the pill row. In the row it was a sixth item with no
-   * label among five that had one, which read as a stray control; next to Send it reads as what it
-   * is — the other way to fill the input.
-   */
-  const randomButton = (
-    <button
-      type="button"
-      onClick={() => {
-        const prompts = profile.suggestedPrompts;
-        submit(prompts[Math.floor(Math.random() * prompts.length)] ?? "");
-      }}
-      aria-label="Ask me something random"
-      className="absolute right-12 flex size-9 items-center justify-center rounded-full text-neutral-400 transition-colors hover:text-neutral-800"
-    >
-      <Sparkles className="size-4" />
-    </button>
-  );
 
   /**
    * The bar puts its field on the shell's surface, so the field itself is bare — a second glass
@@ -127,19 +110,21 @@ export function ChatDock({ variant = "hero" }: { variant?: "hero" | "bar" }) {
       {...fieldProps}
     >
       <input
+        ref={inputRef}
         value={input}
         onChange={(e) => setInput(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         placeholder="Ask me anything..."
         aria-label={`Ask ${profile.name} anything`}
         disabled={configured === null}
         className={cn(
           "w-full flex-1 select-text rounded-full bg-transparent text-[15px] text-neutral-800 outline-none placeholder:text-neutral-600 disabled:cursor-wait",
           // The bar sits under a page rather than in the middle of the hero, so it matches the
-          // chat page's slightly shorter input — and leaves room for the two buttons in its field.
-          bar ? "py-3.5 pl-4 pr-24" : "py-4 pl-6 pr-14",
+          // chat page's slightly shorter input.
+          bar ? "py-3.5 pl-4 pr-14" : "py-4 pl-6 pr-14",
         )}
       />
-      {bar && randomButton}
       {/* Disabled is a lighter blue rather than grey: with nothing typed the button is the main
           thing pointing at the empty input, so it should still read as the action you're meant
           to take, just not yet armed. */}
@@ -157,7 +142,7 @@ export function ChatDock({ variant = "hero" }: { variant?: "hero" | "bar" }) {
   return (
     <div className={bar ? "w-full max-w-2xl" : "w-full max-w-xl"}>
       {bar ? (
-        <DockShell>{form}</DockShell>
+        <DockShell fieldFocused={focused}>{form}</DockShell>
       ) : (
         <>
           {form}

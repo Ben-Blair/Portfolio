@@ -4,9 +4,9 @@ import { ArrowRight } from "lucide-react";
 
 import { ChatDock } from "@/components/hero/ChatDock";
 import { FluidCanvas } from "@/components/hero/FluidCanvas";
-// TEMPORARY: dev-only fluid tuning panel. Delete this import, the <FluidTuner /> below, and
-// FluidTuner.tsx once FLUID_CONFIG's defaults are settled.
-import { FluidTuner } from "@/components/hero/FluidTuner";
+// Dev-only fluid tuning panel, disabled for now. To bring it back for tuning FLUID_CONFIG,
+// uncomment this import and the <FluidTuner /> render below — FluidTuner.tsx is untouched.
+// import { FluidTuner } from "@/components/hero/FluidTuner";
 import { profile } from "@content/profile";
 import { resume } from "@content/resume";
 
@@ -27,7 +27,7 @@ export function Hero() {
     // base, and so was the headline's contrast with it.
     <section className="relative isolate flex min-h-[100svh] select-none flex-col items-center justify-center overflow-hidden bg-white px-5 pb-24 pt-10">
       <FluidCanvas />
-      {process.env.NODE_ENV === "development" && <FluidTuner />}
+      {/* {process.env.NODE_ENV === "development" && <FluidTuner />} */}
 
       {/* Wordmark, behind everything, clipped by the section. */}
       <span

@@ -2,7 +2,7 @@
 
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
-import { ArrowRight, Info, Sparkles, Square } from "lucide-react";
+import { ArrowRight, Info, Square } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -57,6 +57,9 @@ export function ChatView() {
   const panel = PANELS[panelKey];
 
   const [input, setInput] = useState("");
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [focused, setFocused] = useState(false);
 
   // The written answer's equivalent of waiting on a first token, then clearing the screen for it.
   // Keyed off the panel so moving pill to pill takes both beats again rather than cutting straight
@@ -173,7 +176,7 @@ export function ChatView() {
                 // shutting would eat the motion that says they left.
                 <div
                   aria-hidden="true"
-                  className="grid transition-[grid-template-rows] duration-[220ms] ease-in-out motion-reduce:transition-none"
+                  className="grid transition-[grid-template-rows] duration-[360ms] ease-in-out motion-reduce:transition-none"
                   style={{ gridTemplateRows: exiting ? "0fr" : "1fr" }}
                 >
                   <div className="min-h-0">
@@ -244,7 +247,7 @@ export function ChatView() {
         <div className="mx-auto max-w-2xl">
           {/* Always on screen: the pills are the site's only navigation, so they belong to the
               dock the same way the input does rather than being something you have to open. */}
-          <DockShell activePanel={panelKey}>
+          <DockShell activePanel={panelKey} fieldFocused={focused}>
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -253,24 +256,15 @@ export function ChatView() {
               className="relative flex items-center"
             >
               <input
+                ref={inputRef}
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
                 placeholder="Ask me anything..."
                 aria-label={`Ask ${profile.name} anything`}
-                className="w-full flex-1 rounded-full bg-transparent py-3.5 pl-4 pr-24 text-[15px] text-neutral-800 outline-none placeholder:text-neutral-600"
+                className="w-full flex-1 rounded-full bg-transparent py-3.5 pl-4 pr-14 text-[15px] text-neutral-800 outline-none placeholder:text-neutral-600"
               />
-              <button
-                type="button"
-                onClick={() => {
-                  // Never re-ask what's already on screen, so the button always changes something.
-                  const options = profile.suggestedPrompts.filter((prompt) => prompt !== query);
-                  ask(options[Math.floor(Math.random() * options.length)] ?? "");
-                }}
-                aria-label="Ask me something random"
-                className="absolute right-12 flex size-9 items-center justify-center rounded-full text-neutral-400 transition-colors hover:text-neutral-800"
-              >
-                <Sparkles className="size-4" />
-              </button>
               <button
                 type={busy ? "button" : "submit"}
                 onClick={busy ? () => stop() : undefined}
