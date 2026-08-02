@@ -94,11 +94,13 @@ export function ChatView() {
   // double-invoked effects in development — from asking the model the same thing twice.
   const asked = useRef<string | null>(null);
   useEffect(() => {
-    if (!query || asked.current === query) return;
+    // A matched panel answers on its own — see `chatHref` — so its `?query=` is only there for
+    // the bubble above it and shouldn't also be sent to the model.
+    if (!query || panelKey || asked.current === query) return;
     asked.current = query;
     setMessages([]);
     sendMessage({ text: query });
-  }, [query, sendMessage, setMessages]);
+  }, [query, panelKey, sendMessage, setMessages]);
 
   function ask(question: string) {
     const trimmed = question.trim();
@@ -163,7 +165,14 @@ export function ChatView() {
             // The same turn a typed question gets: the question asked, a beat, then an answer
             // that arrives a piece at a time. None of it costs a model call.
             <div>
-              <QuestionBubble question={panel.question} hidden={exiting || answering} lift />
+              {/* What was actually typed, when a free-text question matched this panel — falling
+                  back to the panel's own wording for an actual pill click, which carries no
+                  `query`. See `chatHref`. */}
+              <QuestionBubble
+                question={query || panel.question}
+                hidden={exiting || answering}
+                lift
+              />
 
               {answering ? (
                 <PanelAnswer key={panelKey}>
@@ -242,8 +251,9 @@ export function ChatView() {
       {/* Sticky rather than fixed so it can't cover the end of a long answer. The wrapper fades to
           transparent instead of laying down an opaque slab: the dock's glass has to have something
           behind it to bend, and a white plate is the one backdrop that makes the material vanish.
-          No blur here either — the dock does its own, and blurring twice flattens it. */}
-      <div className="sticky bottom-0 z-20 bg-gradient-to-t from-white via-white/85 to-transparent px-5 pb-5 pt-10">
+          No blur here either — the dock does its own, and blurring twice flattens it. `dock-scrim`
+          (globals.css) is an eased ramp rather than a straight one, so the fade has no visible seam. */}
+      <div className="dock-scrim sticky bottom-0 z-20 px-5 pb-5 pt-10">
         <div className="mx-auto max-w-2xl">
           {/* Always on screen: the pills are the site's only navigation, so they belong to the
               dock the same way the input does rather than being something you have to open. */}

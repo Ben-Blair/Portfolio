@@ -434,6 +434,40 @@
   }
 
   /*
+    The fade behind the dock — every page under `(docked)/layout.tsx` and `/chat` fade their last
+    inch of content to white before it disappears under the pill bar, rather than cutting it off
+    flat, so the glass has something to refract instead of a hard edge.
+
+    That used to be a plain three-stop `from-white via-white/85 to-transparent`, and it showed:
+    a straight two-segment gradient has a kink in its own rate of change at the `via` stop, and
+    the eye reads that kink as a line no matter how gentle either segment is on its own — a Mach
+    band, the same effect that makes flat-shaded polygon edges visible. It was worst over `/projects`,
+    where dark photos and screenshots pass under it instead of the pale page background the ramp
+    was tuned against.
+
+    This is the same opacity ramp with no kink to find: eleven stops sampling
+    `1 - (3t² - 2t³)`, a smoothstep, from t=0 at the bottom to t=1 at the top. That curve's slope
+    is zero at both ends and never jumps, so the fade eases in, eases out, and has no single point
+    where it's changing the fastest — nothing for the eye to catch as a line.
+  */
+  .dock-scrim {
+    background-image: linear-gradient(
+      to top,
+      rgb(255 255 255 / 1) 0%,
+      rgb(255 255 255 / 0.972) 10%,
+      rgb(255 255 255 / 0.896) 20%,
+      rgb(255 255 255 / 0.784) 30%,
+      rgb(255 255 255 / 0.648) 40%,
+      rgb(255 255 255 / 0.5) 50%,
+      rgb(255 255 255 / 0.352) 60%,
+      rgb(255 255 255 / 0.216) 70%,
+      rgb(255 255 255 / 0.104) 80%,
+      rgb(255 255 255 / 0.028) 90%,
+      rgb(255 255 255 / 0) 100%
+    );
+  }
+
+  /*
     A reveal whose fade is shorter than its travel.
 
     `animate-in` can't express this: one duration drives opacity and translate together, so a step

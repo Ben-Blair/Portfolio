@@ -145,6 +145,7 @@ Role: ${profile.headline}
 Age: ${profile.age}
 Location: ${profile.location}
 Email: ${profile.email}
+Phone: ${profile.phone}
 Links: ${profile.socials.map((s) => `${s.label} ${s.href}`).join(", ")}
 
 ${profile.about.join("\n\n")}

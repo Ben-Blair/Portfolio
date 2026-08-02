@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { ArrowUpRight, Mail } from "lucide-react";
+import { ArrowUpRight, Mail, Phone } from "lucide-react";
 
 import { BackHome } from "@/components/site/BackHome";
+import { formatPhone } from "@/lib/utils";
 import { profile } from "@content/profile";
 
 export const metadata: Metadata = {
@@ -26,15 +27,26 @@ export default function ContactPage() {
         ))}
       </div>
 
-      <a
-        href={`mailto:${profile.email}`}
-        className="glass-dark mt-8 inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 text-[15px] font-medium text-white"
-        data-glass
-        suppressHydrationWarning
-      >
-        <Mail className="size-4" />
-        {profile.email}
-      </a>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <a
+          href={`mailto:${profile.email}`}
+          className="glass-dark inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 text-[15px] font-medium text-white"
+          data-glass
+          suppressHydrationWarning
+        >
+          <Mail className="size-4" />
+          {profile.email}
+        </a>
+        <a
+          href={`tel:+1${profile.phone}`}
+          className="glass-dark inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 text-[15px] font-medium text-white"
+          data-glass
+          suppressHydrationWarning
+        >
+          <Phone className="size-4" />
+          {formatPhone(profile.phone)}
+        </a>
+      </div>
 
       <div className="mt-14 border-t border-neutral-200 pt-8">
         <h2 className="font-mono text-[12px] uppercase tracking-widest text-neutral-400">

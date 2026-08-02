@@ -16,6 +16,7 @@ export const profile = {
   location: "Boulder, CO",
   age: 21,
   email: "1benblair@gmail.com",
+  phone: "9494497749",
 
   /** Hero portrait. Drop a file in public/ and point at it. Square images work best. */
   avatar: "/avatar-memoji-hd.webp",
@@ -82,7 +83,7 @@ export const profile = {
    * `color` tints just the icon.
    */
   pills: [
-    { label: "Me", icon: "smile", panel: "me", href: "/about", color: "#329696" },
+    { label: "Me", icon: "smile", panel: "me", href: "/chat?panel=me", color: "#329696" },
     { label: "Projects", icon: "briefcase", href: "/projects?ask=1", color: "#3e9858" },
     { label: "Skills", icon: "layers", panel: "skills", href: "/skills", color: "#866eda" },
     { label: "Fun", icon: "party", panel: "fun", href: "/fun", color: "#ba5f9d" },

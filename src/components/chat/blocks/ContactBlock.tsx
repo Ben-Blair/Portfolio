@@ -1,6 +1,7 @@
-import { ArrowUpRight, Mail } from "lucide-react";
+import { ArrowUpRight, Mail, Phone } from "lucide-react";
 
 import { Fade, Typed } from "@/components/chat/reveal";
+import { formatPhone } from "@/lib/utils";
 import { profile } from "@content/profile";
 
 import { PanelLink } from "./PanelLink";
@@ -16,7 +17,7 @@ export function ContactBlock() {
     <div>
       <Typed step={0} text={profile.contact.join("\n\n")} />
 
-      <Fade step={1} className="mt-5">
+      <Fade step={1} className="mt-5 flex flex-wrap gap-2.5">
         <a
           href={`mailto:${profile.email}`}
           className="glass-dark inline-flex items-center gap-2.5 rounded-full px-5 py-3 text-[14.5px] font-medium text-white"
@@ -25,6 +26,15 @@ export function ContactBlock() {
         >
           <Mail className="size-4" />
           {profile.email}
+        </a>
+        <a
+          href={`tel:+1${profile.phone}`}
+          className="glass-dark inline-flex items-center gap-2.5 rounded-full px-5 py-3 text-[14.5px] font-medium text-white"
+          data-glass
+          suppressHydrationWarning
+        >
+          <Phone className="size-4" />
+          {formatPhone(profile.phone)}
         </a>
       </Fade>
 

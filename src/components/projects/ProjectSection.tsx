@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
@@ -70,6 +71,19 @@ const SETTLED_MS = BODY_DELAY_MS + BODY_LIFT_MS;
 const TINT_FADE_MS = SETTLED_MS;
 
 /**
+ * Every section after the first: one plain fade, all of it, at once.
+ *
+ * The staged arrival above earns its keep on the first section, which is the only one guaranteed
+ * to be seen arriving — it's on screen from the first frame, so the part-by-part sequence actually
+ * plays. Every section past it reaches the screen mid-scroll, at a moment the visitor is already
+ * moving forward, so it's on screen before it's read; a title arriving, then a picture, then a
+ * button row reads as the page stuttering into place rather than as an assembly you'd sit and
+ * watch. No `liftMs` here either — a lift is a small trip for the eye to follow, and with six
+ * elements moving at once there's no single thing to follow it to.
+ */
+const SIMPLE_FADE_MS = 480;
+
+/**
  * One section of the /projects list.
  *
  * Media and copy alternate sides down the page so it doesn't read as a list of identical
@@ -86,16 +100,56 @@ export function ProjectSection({
   index,
   total,
   ready,
+  onSettled,
 }: {
   project: Project;
   index: number;
   total: number;
   /** Whether the page is done with whatever was above this list. See `ProjectsReveal`. */
   ready: boolean;
+  /**
+   * Fired with this section's own `index` once it's far enough along to hand off, not when it
+   * starts. `ProjectsReveal` holds the next section's `ready` on this rather than on scroll
+   * position, so a section two below the fold can't start fading in while the one above it is
+   * still arriving — which is what a purely scroll-driven trigger would allow on a fast scroll or a
+   * short section.
+   *
+   * "Far enough along" isn't "finished": the staged first section hands off when its actions row
+   * starts appearing (`ACTIONS_START_MS`), not once its title and body are done travelling
+   * (`SETTLED_MS`) — waiting for the full settle read as a pause between the two sections rather
+   * than the second picking up off the first. Every later section is one plain fade with nothing
+   * left to wait out, so its handoff is just that fade finishing.
+   *
+   * Takes the index rather than closing over nothing so `ProjectsReveal` can hand every section the
+   * same `useCallback`-stable function. An inline closure recreated per render would retrigger the
+   * effect below on every unrelated re-render — harmless once armed, but it'd keep resetting the
+   * handoff timer and the section it gates would never actually unlock.
+   */
+  onSettled?: (index: number) => void;
 }) {
   const flipped = index % 2 === 1;
   const hero = project.media[0];
-  const { ref, armed } = useArrival(ready);
+  const { ref, armed, skipSettle } = useArrival(ready);
+  // See `SIMPLE_FADE_MS`: only the first section gets the part-by-part sequence.
+  const staged = index === 0;
+
+  // Guarded the same way `ProjectsIntro` guards its own `onSettled`: `armed` is a latch (see
+  // `useArrival`), so this only ever needs to fire once per section.
+  const settled = useRef(false);
+  useEffect(() => {
+    if (!armed || settled.current || !onSettled) return;
+    if (skipSettle) {
+      settled.current = true;
+      onSettled(index);
+      return;
+    }
+    const duration = staged ? ACTIONS_START_MS : SIMPLE_FADE_MS;
+    const timer = window.setTimeout(() => {
+      settled.current = true;
+      onSettled(index);
+    }, duration);
+    return () => window.clearTimeout(timer);
+  }, [armed, skipSettle, onSettled, staged, index]);
 
   return (
     <section
@@ -120,7 +174,7 @@ export function ProjectSection({
           animation overwrites on its first frame. */}
       <Step
         armed={armed}
-        fadeMs={TINT_FADE_MS}
+        fadeMs={staged ? TINT_FADE_MS : SIMPLE_FADE_MS}
         className="pointer-events-none absolute inset-0 -z-10"
       >
         <div
@@ -137,16 +191,16 @@ export function ProjectSection({
           the copy's steps sit inside its own. */}
       <div
         ref={ref}
-        className="mx-auto grid w-full max-w-6xl items-center gap-10 px-5 md:grid-cols-2 md:gap-14 xl:pr-24"
+        className="mx-auto grid w-full max-w-6xl items-center gap-10 px-5 md:grid-cols-2 md:gap-14"
       >
         {/* Half of the body beat. The other half is the description across the gap, on the same
             three numbers — see `BODY_*`. Two elements in two columns arriving as one movement,
             which is what keeps a picture this size from reading as the layout still settling. */}
         <Step
           armed={armed}
-          fadeMs={BODY_FADE_MS}
-          liftMs={BODY_LIFT_MS}
-          delayMs={BODY_DELAY_MS}
+          fadeMs={staged ? BODY_FADE_MS : SIMPLE_FADE_MS}
+          liftMs={staged ? BODY_LIFT_MS : undefined}
+          delayMs={staged ? BODY_DELAY_MS : 0}
           className={cn("min-w-0", flipped && "md:order-2")}
         >
           {hero ? (
@@ -159,7 +213,11 @@ export function ProjectSection({
         <div className={cn("min-w-0", flipped && "md:order-1")}>
           {/* The counter belongs to the title, not to itself: it's a label for the thing under it,
               and a number arriving on its own beat would be the page counting at you. */}
-          <Step armed={armed} fadeMs={TITLE_FADE_MS} liftMs={TITLE_LIFT_MS}>
+          <Step
+            armed={armed}
+            fadeMs={staged ? TITLE_FADE_MS : SIMPLE_FADE_MS}
+            liftMs={staged ? TITLE_LIFT_MS : undefined}
+          >
             <p className="mb-4 font-mono text-[12px] tracking-widest text-neutral-400">
               {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
               {project.status && <span className="ml-3 normal-case">{project.status}</span>}
@@ -173,9 +231,9 @@ export function ProjectSection({
           {/* The other half of the body beat, in lockstep with the picture beside it. */}
           <Step
             armed={armed}
-            fadeMs={BODY_FADE_MS}
-            liftMs={BODY_LIFT_MS}
-            delayMs={BODY_DELAY_MS}
+            fadeMs={staged ? BODY_FADE_MS : SIMPLE_FADE_MS}
+            liftMs={staged ? BODY_LIFT_MS : undefined}
+            delayMs={staged ? BODY_DELAY_MS : 0}
             className="mt-4"
           >
             <p className="max-w-prose text-[17px] leading-relaxed text-neutral-600">
@@ -195,7 +253,12 @@ export function ProjectSection({
 
           {/* Fades without travelling. The block above is still moving, and a second thing in
               motion under it reads as the column not knowing where it means to settle. */}
-          <Step armed={armed} fadeMs={ACTIONS_FADE_MS} delayMs={ACTIONS_START_MS} className="mt-8">
+          <Step
+            armed={armed}
+            fadeMs={staged ? ACTIONS_FADE_MS : SIMPLE_FADE_MS}
+            delayMs={staged ? ACTIONS_START_MS : 0}
+            className="mt-8"
+          >
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 href={`/projects/${project.slug}`}

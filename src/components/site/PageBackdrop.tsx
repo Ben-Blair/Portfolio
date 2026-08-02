@@ -3,7 +3,7 @@
  *
  * This exists for the glass, not for its own sake. `.glass` surfaces refract, blur and saturate
  * whatever sits behind them, and over a flat `bg-white` all three of those are no-ops — bending
- * white gives you white, so the pills on `/about`, `/resume` and the rest collapsed into plain
+ * white gives you white, so the pills on `/skills`, `/resume` and the rest collapsed into plain
  * tinted shapes. Giving them a field with some colour and some gradient structure in it is what
  * makes the refraction visible at all.
  *

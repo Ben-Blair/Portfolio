@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 
-import { ProjectRail } from "@/components/projects/ProjectRail";
 import { ProjectsReveal } from "@/components/projects/ProjectsReveal";
 import { BackHome } from "@/components/site/BackHome";
 import { getProjects } from "@/lib/content";
@@ -44,8 +43,6 @@ export default async function ProjectsPage({
   return (
     <>
       <BackHome />
-
-      <ProjectRail projects={projects.map((p) => ({ slug: p.slug, title: p.title }))} />
 
       <ProjectsReveal projects={projects} asked={asked} />
     </>

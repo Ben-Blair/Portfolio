@@ -7,7 +7,7 @@ import { ChatDock } from "@/components/hero/ChatDock";
  * arrive at `/skills` from the chat and then have nothing but the browser's back button. A route
  * group rather than a wrapper each page renders: the dock is a property of being a sub-page, not
  * something six files should each have to remember. `(docked)` is parentheses, so none of this
- * shows up in a URL — `/about` is still `/about`.
+ * shows up in a URL — `/skills` is still `/skills`.
  *
  * Out of the group on purpose: `/` spreads the same pills out below its own input, and `/chat`
  * renders the dock itself because its input answers inline instead of navigating.
@@ -27,8 +27,9 @@ export default function DockedLayout({ children }: { children: React.ReactNode }
       {/* The wrapper fades instead of laying down an opaque plate: the dock's glass needs page
           content passing under it to have anything to refract, and a white slab is the one
           backdrop that makes the material disappear. No blur here either — the dock does its own,
-          and blurring twice flattens it. */}
-      <div className="sticky bottom-0 z-30 bg-gradient-to-t from-white via-white/85 to-transparent px-5 pb-5 pt-10">
+          and blurring twice flattens it. `dock-scrim` (globals.css) is an eased ramp rather than a
+          straight one, so the fade has no visible seam. */}
+      <div className="dock-scrim sticky bottom-0 z-30 px-5 pb-5 pt-10">
         <div className="mx-auto flex max-w-2xl justify-center">
           <ChatDock variant="bar" />
         </div>

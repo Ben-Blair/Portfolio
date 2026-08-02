@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 
 /**
  * The way out of a panel and onto the full page behind it. Every panel ends with one, so the
- * inline answer is a preview rather than a replacement for `/about`, `/skills` and the rest.
+ * inline answer is a preview rather than a replacement for `/skills`, `/resume` and the rest.
  */
 export function PanelLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (

@@ -50,6 +50,12 @@ export function useArrival(ready: boolean) {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const [seen, setSeen] = useState(false);
+  // Whether this section was already above the viewport the first time it was checked — a refresh
+  // landing mid-page, a `#slug` link, or a back-navigation with scroll restored all start the
+  // observer below section 0. A skipped section's `isIntersecting` never turns true on its own
+  // (scrolling back up to it is not something the chain can wait for), so without this every
+  // section downstream of it stays gated on a settle that can never fire. See `skipSettle` below.
+  const skippedRef = useRef(false);
 
   useEffect(() => {
     const el = ref.current;
@@ -57,7 +63,10 @@ export function useArrival(ready: boolean) {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) return;
+        if (!entry.isIntersecting) {
+          if (entry.boundingClientRect.top > 0) return;
+          skippedRef.current = true;
+        }
         setSeen(true);
         observer.disconnect();
       },
@@ -70,7 +79,15 @@ export function useArrival(ready: boolean) {
   // Reduced motion doesn't wait for anything. The steps here gate only appearance — unlike the
   // chat panel's, they're already in the document — so arming them all on the first frame is the
   // whole of it, and the `@media` block on `.reveal-*` takes care of the movement itself.
-  return { ref, armed: reduced || (ready && seen) };
+  //
+  // `reduced` is handed back too: a caller that chains its own settling off `armed` (a section
+  // waiting for the one above it to finish, say) needs to know when there's no animation to wait
+  // out, or the chain would sit on a timer for a movement that never plays.
+  //
+  // `skipSettle` covers the other way a caller's settle-timer can be skipped: a section nobody is
+  // watching arrive doesn't need its arrival timed, and offscreen sections must hand off
+  // immediately or the whole chain behind them stalls waiting on a movement nobody will see.
+  return { ref, armed: reduced || (ready && seen), reduced, skipSettle: reduced || skippedRef.current };
 }
 
 /**

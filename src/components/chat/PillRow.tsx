@@ -186,6 +186,12 @@ export function PillRow({
   // blank one level down is worse than no nav at all.
   const currentPill = profile.pills.find((pill) => {
     const path = pill.href.split("?")[0];
+    // `/chat` itself is shared by every panel — Me's own `href` reduces to it since it has no
+    // standalone page of its own — so a plain pathname match can't tell one panel pill from
+    // another there. `activePanel` is the only thing that can, and it's what the third condition
+    // below already checks; matching on `path` too would let Me's `/chat?panel=me` win by pathname
+    // alone before a later pill's `activePanel` check is even reached.
+    if (path === "/chat") return "panel" in pill && Boolean(activePanel) && activePanel === pill.panel;
     return (
       pathname === path ||
       pathname.startsWith(`${path}/`) ||

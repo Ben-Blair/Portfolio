@@ -33,7 +33,7 @@ const CHIPS_START_MS = INTRO_FADE_MS - CHIPS_LEAD_MS;
 const CHIPS_FADE_MS = INTRO_LIFT_MS - CHIPS_START_MS;
 
 /**
- * The Me panel: the short version of `/about`, in the same words.
+ * The Me panel.
  *
  * The header arrives into an empty page — the question bubble and the dots have finished leaving
  * before any of this mounts. The name and the line under it lift into place, and the photo does
@@ -137,7 +137,6 @@ export function AboutBlock() {
 
       <Fade step={4} className="mt-6">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <PanelLink href="/about">More about me</PanelLink>
           <PanelLink href="/resume">Read the resume</PanelLink>
         </div>
       </Fade>

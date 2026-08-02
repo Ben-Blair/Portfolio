@@ -1,6 +1,7 @@
 import { AboutBlock } from "./AboutBlock";
 import { ContactBlock } from "./ContactBlock";
 import { FunBlock } from "./FunBlock";
+import { ResumeBlock } from "./ResumeBlock";
 import { SkillsBlock } from "./SkillsBlock";
 
 /**
@@ -28,4 +29,5 @@ export const PANELS: Record<string, PanelEntry> = {
   skills: { question: "What are you good at?", Block: SkillsBlock },
   fun: { question: "What do you do for fun?", Block: FunBlock },
   contact: { question: "How do I get in touch?", Block: ContactBlock },
+  resume: { question: "Can I see your resume?", Block: ResumeBlock },
 };
