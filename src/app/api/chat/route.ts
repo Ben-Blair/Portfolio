@@ -48,9 +48,12 @@ export async function POST(req: Request) {
     );
   }
 
+  // Vercel appends the real client IP to x-forwarded-for, so the first entry is
+  // whatever a client chose to send — take the last one instead so it can't be spoofed
+  // to dodge the rate limit.
   const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     req.headers.get("x-real-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ??
     "unknown";
 
   if (rateLimited(ip)) {
