@@ -45,6 +45,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     options: { parseFrontmatter: false },
   });
 
+  // `heroOnly` items have already had their turn on the projects list; repeating them here is
+  // the same clip twice on two pages the visitor sees back to back.
+  const pageMedia = project.media.filter((item) => !item.heroOnly);
+
   const formattedDate = new Date(project.date).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -104,9 +108,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
         )}
       </header>
 
-      {project.media.length > 0 && (
+      {pageMedia.length > 0 && (
         <div className="mt-12">
-          <MediaList media={project.media} />
+          <MediaList media={pageMedia} />
         </div>
       )}
 

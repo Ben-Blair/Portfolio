@@ -80,7 +80,7 @@ export const resume = {
     {
       name: "Real-Time Indoor Presence & Location Tracker",
       stack: "C++, TypeScript",
-      slug: "mmwave-map",
+      slug: "presence-scan",
       bullets: [
         "Wrote custom embedded firmware in C++ (ESP32-C3, PlatformIO/Arduino) that parses raw HLK-LD2450 mmWave radar frames over UART and streams up to 3 tracked targets in real time as JSON over an on-device WebSocket server.",
         "Implemented an autonomous simulation mode using an 8-connected A* search algorithm (octile heuristic) with multi-agent obstacle avoidance over an occupancy grid derived from a splat point cloud; smoothed live radar jitter with a per-target One Euro adaptive filter.",

@@ -86,25 +86,36 @@ export const profile = {
     { label: "Me", icon: "smile", panel: "me", href: "/chat?panel=me", color: "#329696" },
     { label: "Projects", icon: "briefcase", href: "/projects?ask=1", color: "#3e9858" },
     { label: "Skills", icon: "layers", panel: "skills", href: "/skills", color: "#866eda" },
-    { label: "Fun", icon: "party", panel: "fun", href: "/fun", color: "#ba5f9d" },
+    { label: "Fun", icon: "party", panel: "fun", href: "/chat?panel=fun", color: "#ba5f9d" },
     { label: "Contact", icon: "user-search", panel: "contact", href: "/contact", color: "#c19433" },
   ],
 
-  /** The /fun page. Rewrite these in your own voice — they're a starting point, not a spec. */
-  fun: [
-    {
-      title: "I fly high-power rockets",
-      body: "Designing, building, and launching them — which is mostly a lesson in how many ways a thing can go wrong before it goes up. The writeup is under Projects.",
+  /**
+   * The Fun panel at `/chat?panel=fun`. One subject rather than a list of them — the answer to
+   * "what do you do for fun" is filming trips, so the panel is one of those films and the reason
+   * for it.
+   *
+   * The cut lives on YouTube, not in `public/`: it runs two and a half minutes with sound, which
+   * is tens of megabytes self-hosted and a slow first load for every visitor. Streaming it means
+   * only what gets watched is ever sent.
+   *
+   * It plays on its own, on a loop, muted — the volume button on the player is how sound gets
+   * turned on, and has to be, since no browser will autoplay audio unprompted.
+   */
+  fun: {
+    title: "Summer Highlights",
+    body: [
+      "Anywhere I travel, the camera comes with me. This one is the drive home from Boulder to Southern California — up into Wyoming, down through Utah, across Nevada, then the last stretch along the coast. Mountains hiked on the way, nights camped out in the boonies, most of the west in between.",
+      "Cutting it together is how I go back through the trip. It's the only thing I make where nothing has to work. It just has to look the way it felt.",
+    ],
+    video: {
+      /** The `v=` parameter from the YouTube URL. */
+      id: "P8Vvbgfopqs",
+      title: "Summer",
+      /** Match this to what was uploaded, or the player sits in black bars. */
+      aspect: "6/5",
     },
-    {
-      title: "I scan real objects into the browser",
-      body: "Gaussian splatting turns a few minutes of phone video into something you can spin around on a webpage. Half the models on this site started as things sitting on my desk.",
-    },
-    {
-      title: "I started a club",
-      body: "Jesus Club CU at Boulder. Founding it taught me more about shipping and maintaining something people actually rely on than most of my code has.",
-    },
-  ],
+  },
 
   /** Shown under the chat input as one-tap starters. */
   suggestedPrompts: [

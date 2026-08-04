@@ -59,13 +59,13 @@ export const FLUID_CONFIG: FluidConfig = {
 
   /**
    * Jacobi iterations for the pressure solve. More = less divergence, more GPU. Upstream uses
-   * 20; 5 is deliberately loose here — the residual divergence reads as extra drift, and this
-   * is a background, not a physics demo.
+   * 20; 12 still runs loose enough that the residual divergence reads as extra drift, which
+   * is fine for a background.
    */
-  PRESSURE_ITERATIONS: 5,
+  PRESSURE_ITERATIONS: 12,
 
   /** How much pressure carries between frames. */
-  PRESSURE: 0.44,
+  PRESSURE: 0.5,
 
   /** Vorticity confinement strength — this is what puts the curls back in. */
   CURL: 3,
@@ -86,17 +86,17 @@ export const FLUID_CONFIG: FluidConfig = {
 
   /**
    * Multiplier on how bright injected dye is. Upstream scales its generated color by 0.15
-   * here; this injects at full strength instead and pulls the whole canvas back with OPACITY
-   * below. Same end result, but dense and faint dye keep their relative contrast rather than
-   * both being crushed toward zero before the display pass sees them.
+   * here; this injects far stronger and pulls the whole canvas back with OPACITY below. Same
+   * end result, but dense and faint dye keep their relative contrast rather than both being
+   * crushed toward zero before the display pass sees them.
    */
-  SPLAT_INTENSITY: 1,
+  SPLAT_INTENSITY: 0.29,
 
   /**
    * Overall opacity of the whole canvas, and the counterweight to SPLAT_INTENSITY above.
-   * Low on purpose: the headline sits directly on top of this and has to stay readable.
+   * The headline sits directly on top of this and has to stay readable.
    */
-  OPACITY: 0.14,
+  OPACITY: 0.73,
 
   /**
    * Strength of the fake directional light on the dye gradient, which gives ribbons a lit

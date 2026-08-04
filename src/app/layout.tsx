@@ -3,6 +3,8 @@ import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 import { GlassLayer } from "@/components/site/GlassLayer";
 import { PageBackdrop } from "@/components/site/PageBackdrop";
+import { ProjectPreloadProvider } from "@/components/site/ProjectPreloadContext";
+import { getFirstProjectPreload } from "@/lib/content";
 import { profile } from "@content/profile";
 
 import "./globals.css";
@@ -53,6 +55,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const preload = getFirstProjectPreload();
+
   return (
     <html
       lang="en"
@@ -64,7 +68,9 @@ export default function RootLayout({
         <PageBackdrop />
         {/* No site chrome by design. Navigation is the pill row, which the hero spreads out below
             its input and every other page carries in the dock — see `app/(docked)/layout.tsx`. */}
-        <main className="flex-1">{children}</main>
+        <ProjectPreloadProvider url={preload?.url}>
+          <main className="flex-1">{children}</main>
+        </ProjectPreloadProvider>
         {/* Builds the refraction filters behind every `.glass` surface. Renders nothing visible. */}
         <GlassLayer />
       </body>

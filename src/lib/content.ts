@@ -54,6 +54,20 @@ export const getFeaturedProjects = cache((): Project[] =>
   getProjects().filter((project) => project.featured),
 );
 
+/**
+ * The URL to warm the browser's cache with before the visitor has navigated to `/projects` —
+ * the first project's video, so hovering the Projects pill can get a head start on it. Reads
+ * off the same sort order `/projects` itself uses rather than naming a project, so this stays
+ * correct as content is added or reordered.
+ *
+ * `undefined` when the first project isn't a video (nothing worth warming eagerly here — a
+ * splat pulls in its own renderer bundle first, an image is small enough not to bother).
+ */
+export const getFirstProjectPreload = cache((): { url: string } | undefined => {
+  const media = getProjects()[0]?.media.find((item) => item.type === "video");
+  return media && { url: media.src };
+});
+
 /** Every tag in use, most-used first. Powers the filter row. */
 export const getAllTags = cache((): string[] => {
   const counts = new Map<string, number>();

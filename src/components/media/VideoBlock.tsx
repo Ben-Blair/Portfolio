@@ -4,6 +4,7 @@ import { Play } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+import { YOUTUBE_EMBED_ORIGIN } from "@/components/chat/warm";
 import type { Media } from "@/lib/schema";
 
 type VideoProps = Extract<Media, { type: "video" }>;
@@ -65,26 +66,71 @@ export function VideoBlock({ src, poster, loop, autoplay, controls, caption }: V
 }
 
 /**
- * A YouTube video behind a facade: nothing is requested from youtube.com until the visitor
- * actually clicks play. Keeps the page fast and avoids loading their trackers on every view.
+ * A YouTube video, in one of two modes.
+ *
+ * By default it's a facade: nothing is requested from youtube.com until the visitor actually
+ * clicks play, which keeps the page fast and their trackers off every view.
+ *
+ * `loop` trades that away deliberately — the video starts on its own and repeats, so the frame
+ * is the picture rather than a thumbnail of it. It has to start muted, because no browser will
+ * autoplay audio unprompted; the player keeps its own controls, which is where sound gets turned
+ * back on.
  */
-export function YouTubeBlock({ id, title, poster, loop, caption }: YouTubeProps) {
+export function YouTubeBlock({ id, title, poster, loop, aspect, caption }: YouTubeProps) {
   const [playing, setPlaying] = useState(false);
+  const frame = useRef<HTMLIFrameElement>(null);
   const thumbnail = poster ?? `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
+
+  /**
+   * Points the autoplaying embed at its URL, after mount and by hand rather than as a rendered
+   * attribute, because `origin` has to be part of it and the only place that value exists is
+   * `window`. It isn't optional: a player asked to start on its own without being told what page
+   * it's on answers with "Error 153, video player configuration error" and sits at 0:00 forever.
+   * Rendering it would mean guessing the host on the server and hydrating over the guess, so it's
+   * assigned here — a DOM node being told about the world, which is what an effect is for.
+   */
+  useEffect(() => {
+    const el = frame.current;
+    if (!loop || !el) return;
+
+    const params = new URLSearchParams({
+      autoplay: "1",
+      mute: "1",
+      loop: "1",
+      // A single-video loop has to name itself as the playlist; there's no other way to say it.
+      playlist: id,
+      playsinline: "1",
+      // Keeps the end-of-video suggestions to this channel instead of the whole of YouTube.
+      rel: "0",
+      enablejsapi: "1",
+      origin: window.location.origin,
+    });
+    el.src = `${YOUTUBE_EMBED_ORIGIN}/embed/${id}?${params}`;
+  }, [loop, id]);
 
   return (
     <figure className="not-prose">
-      <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-900">
+      {/* The ratio is a style rather than a class because it comes from content, and Tailwind's
+          compiler can only see class names written in the source. YouTube fits the video inside
+          whatever box the iframe is given, so a cut that isn't 16:9 sits in bars until this
+          matches what was uploaded. */}
+      <div
+        style={{ aspectRatio: aspect }}
+        className="relative w-full overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-900"
+      >
         {loop ? (
+          // No `src` here on purpose — the effect above assigns it once there's a `window` to
+          // read the origin from.
           <iframe
-            src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0`}
+            ref={frame}
             title={title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
             className="absolute inset-0 size-full"
           />
         ) : playing ? (
           <iframe
-            src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1`}
+            src={`${YOUTUBE_EMBED_ORIGIN}/embed/${id}?autoplay=1`}
             title={title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen

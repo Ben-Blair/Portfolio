@@ -11,13 +11,24 @@ cover: /media/splat-pipeline/cover.svg
 links:
   - { label: GitHub, href: "https://github.com/Ben-Blair" }
 media:
+  - type: splat
+    src: /splats/green-dragon.sog
+    poster: /media/splat-pipeline/cover.svg
+    caption: "A real scan of a dragon figurine, trained by this pipeline and compressed to under 2 MB. Scroll to fly the camera around it."
+    scale: 1.5
+    position: [0, 0.12, 0]
+    rotation: [0.1, -1.7, 3]
+    cameraDistance: 1.9
+    cameraYaw: 0
+    cameraPitch: 0
   - type: image
     src: /media/splat-pipeline/cover.svg
     alt: Pipeline stages from capture to splat
     caption: "TODO: swap for a real side-by-side — input photo on the left, trained splat on the right."
 ---
 
-Every splat on this site came out of this. It's the boring infrastructure that makes the fun stuff
+Every splat on this site came out of this, including the one above, trained end to end through this
+exact pipeline. It's the boring infrastructure that makes the fun stuff
 possible: point it at a video file or a folder of photos, and it hands back a trained `.ply` you
 can drop straight into a browser.
 

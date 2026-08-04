@@ -17,7 +17,7 @@ const SplatBlock = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="aspect-[4/3] w-full animate-pulse rounded-2xl border border-neutral-200 bg-neutral-100" />
+      <div className="aspect-[16/10] w-full animate-pulse rounded-2xl border border-neutral-200 bg-neutral-100" />
     ),
   },
 );
@@ -48,7 +48,7 @@ function WhenNear({ children }: { children: React.ReactNode }) {
       {near ? (
         children
       ) : (
-        <div className="aspect-[4/3] w-full rounded-2xl border border-neutral-200 bg-neutral-50" />
+        <div className="aspect-[16/10] w-full rounded-2xl border border-neutral-200 bg-neutral-50" />
       )}
     </div>
   );

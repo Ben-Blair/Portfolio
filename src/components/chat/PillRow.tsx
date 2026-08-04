@@ -13,6 +13,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import { useReducedMotion } from "@/components/chat/useReducedMotion";
+import { warmMediaUrl, warmPanel } from "@/components/chat/warm";
+import { useProjectPreloadUrl } from "@/components/site/ProjectPreloadContext";
 import { cn } from "@/lib/utils";
 import { profile } from "@content/profile";
 
@@ -166,6 +168,7 @@ export function PillRow({
   trailing?: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const projectPreloadUrl = useProjectPreloadUrl();
 
   const reducedMotion = useReducedMotion();
 
@@ -357,6 +360,17 @@ export function PillRow({
         const Icon = PILL_ICONS[pill.icon] ?? Smile;
         const current = pill === currentPill;
 
+        // Hover and focus are the same signal — the earliest one there is short of the click —
+        // so both events get this. What "ready" means is the warm module's problem, not the
+        // row's: a panel pill warms whatever its panel needs, and Projects warms the video its
+        // first section will play. See `src/components/chat/warm.ts`.
+        const warm =
+          "panel" in pill
+            ? () => warmPanel(pill.panel)
+            : pill.href.startsWith("/projects")
+              ? () => warmMediaUrl(projectPreloadUrl)
+              : undefined;
+
         return (
           <Link
             key={pill.label}
@@ -368,6 +382,8 @@ export function PillRow({
             // without a `panel` is a different type rather than one with an empty field.
             href={"panel" in pill ? `/chat?panel=${pill.panel}` : pill.href}
             onClick={rememberCurrentPosition}
+            onMouseEnter={warm}
+            onFocus={warm}
             aria-current={current ? "page" : undefined}
             className={cn(
               // `relative` keeps the label and icon above the lozenge, which is positioned and so

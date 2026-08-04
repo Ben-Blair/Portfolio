@@ -16,6 +16,7 @@ import { PanelAnswer } from "@/components/chat/reveal";
 import { PANEL_EXIT_MS, PANEL_THINKING_MS } from "@/components/chat/timing";
 import { useReducedMotion } from "@/components/chat/useReducedMotion";
 import { useTypewriter } from "@/components/chat/useTypewriter";
+import { warmPanel } from "@/components/chat/warm";
 import {
   Dialog,
   DialogContent,
@@ -83,6 +84,15 @@ export function ChatView() {
     const timer = setTimeout(() => setAnswered(panelKey), reduced ? 0 : PANEL_EXIT_MS);
     return () => clearTimeout(timer);
   }, [exiting, panelKey, reduced]);
+
+  // Which panel is coming is known the moment this mounts, which is the two timers above — most
+  // of a second — before its block is in the tree at all. Fun's cut is a YouTube embed whose
+  // iframe can't ask for anything until then, so the beat gets spent on the connection instead of
+  // nothing. This is also the path that covers touch, where no hover ever happens, and a link
+  // straight to `?panel=fun`, where there's no pill to hover in the first place.
+  useEffect(() => {
+    if (panelKey) warmPanel(panelKey);
+  }, [panelKey]);
 
   const { messages, sendMessage, status, error, stop, setMessages } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
@@ -252,9 +262,14 @@ export function ChatView() {
           transparent instead of laying down an opaque slab: the dock's glass has to have something
           behind it to bend, and a white plate is the one backdrop that makes the material vanish.
           No blur here either — the dock does its own, and blurring twice flattens it. `dock-scrim`
-          (globals.css) is an eased ramp rather than a straight one, so the fade has no visible seam. */}
-      <div className="dock-scrim sticky bottom-0 z-20 px-5 pb-5 pt-10">
-        <div className="mx-auto max-w-2xl">
+          (globals.css) is an eased ramp rather than a straight one, so the fade has no visible seam.
+
+          `pointer-events-none` on the wrapper, `pointer-events-auto` back on for the dock itself:
+          the fade's top ~40px (`pt-10`) reads as empty, but the box is still there and, without
+          this, still catches clicks meant for whatever's underneath it. See the same fix in
+          `(docked)/layout.tsx`. */}
+      <div className="dock-scrim pointer-events-none sticky bottom-0 z-20 px-5 pb-5 pt-10">
+        <div className="pointer-events-auto mx-auto max-w-2xl">
           {/* Always on screen: the pills are the site's only navigation, so they belong to the
               dock the same way the input does rather than being something you have to open. */}
           <DockShell activePanel={panelKey} fieldFocused={focused}>

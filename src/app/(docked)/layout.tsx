@@ -28,9 +28,15 @@ export default function DockedLayout({ children }: { children: React.ReactNode }
           content passing under it to have anything to refract, and a white slab is the one
           backdrop that makes the material disappear. No blur here either — the dock does its own,
           and blurring twice flattens it. `dock-scrim` (globals.css) is an eased ramp rather than a
-          straight one, so the fade has no visible seam. */}
-      <div className="dock-scrim sticky bottom-0 z-30 px-5 pb-5 pt-10">
-        <div className="mx-auto flex max-w-2xl justify-center">
+          straight one, so the fade has no visible seam.
+
+          `pointer-events-none` on the wrapper, `pointer-events-auto` back on for the dock itself:
+          the fade's top ~40px (`pt-10`) reads as empty, but the box is still there and, without
+          this, still catches clicks meant for whatever's underneath it — a button near the bottom
+          of a section becomes unclickable until you scroll it past the transparent part of the
+          gradient. */}
+      <div className="dock-scrim pointer-events-none sticky bottom-0 z-30 px-5 pb-5 pt-10">
+        <div className="pointer-events-auto mx-auto flex max-w-2xl justify-center">
           <ChatDock variant="bar" />
         </div>
       </div>
