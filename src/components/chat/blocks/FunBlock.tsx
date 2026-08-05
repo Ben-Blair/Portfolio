@@ -1,5 +1,5 @@
+import { FunVideo } from "@/components/chat/blocks/FunVideo";
 import { Fade, Typed } from "@/components/chat/reveal";
-import { YouTubeBlock } from "@/components/media/VideoBlock";
 import { profile } from "@content/profile";
 
 /** Long enough for a full-width still to become a picture rather than a rectangle turning on. */
@@ -18,12 +18,10 @@ const MEDIA_LIFT_MS = 760;
  * The heading and the video share step 0 the way the name and the photo do in `AboutBlock`: a
  * title over a picture is one thing arriving, not two.
  *
- * `loop` gives up `YouTubeBlock`'s click-to-play facade on purpose — the cut plays itself, so the
- * frame is the film rather than a thumbnail of it — which means this block asks youtube.com for a
- * player the moment it mounts, and it only mounts once the panel has finished being thought about.
- * `warmPanel("fun")` is what covers that: the connection is opened back when the pill was hovered
- * or the panel key first appeared in the URL, so the request that starts here starts on bytes. See
- * `src/components/chat/warm.ts`.
+ * The cut plays itself on mount, no click-to-play facade — the frame is the film rather than a
+ * thumbnail of it. `warmPanel("fun")` fetches its bytes ahead of the panel finishing its entrance,
+ * fired back when the pill was hovered or the panel key first appeared in the URL, so the request
+ * that starts here starts warm. See `src/components/chat/warm.ts`.
  */
 export function FunBlock() {
   const { title, body, video } = profile.fun;
@@ -35,14 +33,7 @@ export function FunBlock() {
           {title}
         </h3>
 
-        <YouTubeBlock
-          type="youtube"
-          id={video.id}
-          title={video.title}
-          aspect={video.aspect}
-          loop
-          heroOnly={false}
-        />
+        <FunVideo src={video.src} poster={video.poster} title={video.title} aspect={video.aspect} />
       </Fade>
 
       {/* Blank lines rather than a paragraph each: the answer renderer splits them itself, and

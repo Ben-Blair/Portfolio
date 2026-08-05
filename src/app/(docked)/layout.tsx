@@ -13,7 +13,7 @@ import { ChatDock } from "@/components/hero/ChatDock";
  * renders the dock itself because its input answers inline instead of navigating.
  *
  * `min-h-dvh` with a `flex-1` content column is what makes `sticky` behave on a short page like
- * `/contact`: without it the dock comes to rest directly under the last paragraph, halfway up the
+ * `/skills`: without it the dock comes to rest directly under the last paragraph, halfway up the
  * screen. With it the column always fills the viewport, so the dock is either pinned to the
  * bottom edge or riding the end of long content — never stranded in the middle.
  *

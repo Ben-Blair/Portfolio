@@ -4,10 +4,9 @@ import { Fade, Typed } from "@/components/chat/reveal";
 import { formatPhone } from "@/lib/utils";
 import { profile } from "@content/profile";
 
-import { PanelLink } from "./PanelLink";
-
 /**
- * The Contact panel: the email, the links, and nothing to fill in.
+ * The Contact panel: the email, the links, and nothing to fill in. There's no standalone
+ * `/contact` page behind it, this panel is the whole answer.
  *
  * The one that opens with prose. It types, and then the address and the links land under it —
  * which is the order the sentence sets up anyway.
@@ -54,10 +53,6 @@ export function ContactBlock() {
             </li>
           ))}
         </ul>
-
-        <div className="mt-6">
-          <PanelLink href="/contact">The contact page</PanelLink>
-        </div>
       </Fade>
     </div>
   );

@@ -20,12 +20,12 @@ export function BackHome() {
       data-glass
       suppressHydrationWarning
     >
-      <span className="relative size-9 overflow-hidden rounded-full">
+      <span className="relative size-[52px] overflow-hidden rounded-full">
         <Image
           src={profile.avatar}
           alt={profile.fullName}
           fill
-          sizes="36px"
+          sizes="52px"
           className="object-contain"
         />
       </span>

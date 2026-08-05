@@ -1,23 +1,18 @@
 "use client";
 
-import { preconnect } from "react-dom";
-
 /**
  * Getting ready for something the visitor has signalled they want, but hasn't asked for yet.
- *
- * Two mechanisms, because the two things worth warming are nothing alike. A project's video is
- * ours and on our own origin, so the useful thing is the bytes. YouTube's embed is a third party
- * at the end of a cold connection, so the useful thing is the handshake — the bytes can't be
- * fetched ahead of time in any way the iframe would actually reuse.
+ * Every panel and project video is ours, on our own origin, so the useful thing to warm is always
+ * the bytes — see `warmMediaUrl` below.
  *
  * Nothing here imports a component: `PillRow` is mounted on the hero, and reaching this from
  * there must not drag `panels.tsx` — and with it every panel block — into the hero's bundle.
  */
 
 /**
- * Where the Fun panel's embed comes from. Exported because `VideoBlock` builds its iframe URLs
- * from this same constant: a preconnect to a host nothing is requested from looks exactly like a
- * working one, so the two must not be able to drift apart.
+ * Where a project's click-to-play YouTube embed comes from. Exported so `VideoBlock` builds its
+ * iframe URLs from the same constant this file would preconnect to, if a panel ever needed that
+ * — a third-party host is the one case bytes can't be warmed ahead of time.
  */
 export const YOUTUBE_EMBED_ORIGIN = "https://www.youtube-nocookie.com";
 
@@ -42,26 +37,12 @@ export function warmMediaUrl(url: string | undefined) {
 /**
  * What each panel wants done before it's opened. A panel with nothing to warm simply isn't here.
  *
- * Fun is the one that costs anything: its cut is a YouTube embed, and the iframe only gets its
- * `src` once the panel has finished arriving — see the timers in `ChatView` and the effect in
- * `VideoBlock`. Opening the connection now means that request starts on bytes rather than on a
- * DNS lookup, a TCP handshake and a TLS negotiation.
- *
- * Deliberately *not* a hint in the root layout: a visitor who never opens Fun should never touch
- * a Google-owned host. Intent is the trigger, which is what keeps that true.
- *
- * No `crossOrigin` option, and it matters. The embed is an iframe navigation rather than a CORS
- * fetch, and a `crossorigin` preconnect opens an anonymous-credentials connection keyed
- * differently from the one the navigation will use — the handshake would be paid twice and the
- * hint would buy nothing.
- *
- * One host only. `www.youtube-nocookie.com` serves both the embed document and the player, the
- * media segments come from a `googlevideo.com` subdomain whose name can't be known in advance,
- * and `i.ytimg.com` only serves the click-to-play facade's thumbnail, which this panel doesn't
- * render.
+ * Fun is the one that costs anything: its cut is ours, on our own origin, so the useful thing is
+ * the bytes, fetched the same way `PillRow` warms a project's preview video — see `warmMediaUrl`
+ * above.
  */
 const PANEL_WARM: Record<string, () => void> = {
-  fun: () => preconnect(YOUTUBE_EMBED_ORIGIN),
+  fun: () => warmMediaUrl("/media/fun/summer.mp4"),
 };
 
 /**

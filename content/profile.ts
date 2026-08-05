@@ -19,7 +19,7 @@ export const profile = {
   phone: "9494497749",
 
   /** Hero portrait. Drop a file in public/ and point at it. Square images work best. */
-  avatar: "/avatar-memoji-hd.webp",
+  avatar: "/main-face.webp",
 
   /** One or two sentences, used on the homepage and in social previews. */
   blurb:
@@ -54,7 +54,7 @@ export const profile = {
     "I also founded Jesus Club CU, a student club at Boulder, which taught me as much about shipping and maintaining something people actually depend on as any codebase has.",
   ],
 
-  /** What the contact page opens with, and what the Contact pill answers. One string, one paragraph. */
+  /** What the Contact panel opens with, and what the Contact pill answers. One string, one paragraph. */
   contact: [
     "I'm looking for internships and new-grad roles where I can work on computer vision, 3D, embedded systems, or anything that touches real hardware. If that's you, I'd like to hear about it.",
     "Email is the fastest way to reach me. I read everything.",
@@ -87,7 +87,7 @@ export const profile = {
     { label: "Projects", icon: "briefcase", href: "/projects?ask=1", color: "#3e9858" },
     { label: "Skills", icon: "layers", panel: "skills", href: "/skills", color: "#866eda" },
     { label: "Fun", icon: "party", panel: "fun", href: "/chat?panel=fun", color: "#ba5f9d" },
-    { label: "Contact", icon: "user-search", panel: "contact", href: "/contact", color: "#c19433" },
+    { label: "Contact", icon: "user-search", panel: "contact", href: "/chat?panel=contact", color: "#c19433" },
   ],
 
   /**
@@ -95,12 +95,10 @@ export const profile = {
    * "what do you do for fun" is filming trips, so the panel is one of those films and the reason
    * for it.
    *
-   * The cut lives on YouTube, not in `public/`: it runs two and a half minutes with sound, which
-   * is tens of megabytes self-hosted and a slow first load for every visitor. Streaming it means
-   * only what gets watched is ever sent.
+   * The cut is self-hosted, not on YouTube: sixteen silent seconds compresses to a couple
+   * megabytes, so there's none of the slow-first-load cost a longer cut with sound would carry.
    *
-   * It plays on its own, on a loop, muted — the volume button on the player is how sound gets
-   * turned on, and has to be, since no browser will autoplay audio unprompted.
+   * It plays on its own, on a loop, muted, the moment the panel is on screen.
    */
   fun: {
     title: "Summer Highlights",
@@ -109,10 +107,11 @@ export const profile = {
       "Cutting it together is how I go back through the trip. It's the only thing I make where nothing has to work. It just has to look the way it felt.",
     ],
     video: {
-      /** The `v=` parameter from the YouTube URL. */
-      id: "P8Vvbgfopqs",
+      src: "/media/fun/summer.mp4",
+      /** The first frame, pixel-matched to the encode — shown until playback actually starts. */
+      poster: "/media/fun/poster.jpg",
       title: "Summer",
-      /** Match this to what was uploaded, or the player sits in black bars. */
+      /** Match this to what was exported, or the frame sits in bars. */
       aspect: "6/5",
     },
   },

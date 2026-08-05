@@ -25,7 +25,7 @@ export function Hero() {
     //
     // bg-white covers the site-wide PageBackdrop: the fluid's OPACITY was tuned against a white
     // base, and so was the headline's contrast with it.
-    <section className="relative isolate flex min-h-[100svh] select-none flex-col items-center justify-center overflow-hidden bg-white px-5 pb-24 pt-10">
+    <section className="relative isolate flex min-h-[100svh] select-none flex-col items-center justify-center overflow-hidden bg-white px-5 pb-8 pt-10">
       <FluidCanvas />
       {/* {process.env.NODE_ENV === "development" && <FluidTuner />} */}
 
@@ -56,12 +56,12 @@ export function Hero() {
           {profile.headline}
         </h1>
 
-        <div className="relative my-3 size-60 sm:size-72">
+        <div className="relative my-2 aspect-[901/675] w-[360px] sm:w-[432px]">
           <Image
             src={profile.avatar}
             alt={profile.fullName}
             fill
-            sizes="(min-width: 640px) 288px, 240px"
+            sizes="(min-width: 640px) 432px, 360px"
             quality={95}
             priority
             className="object-contain drop-shadow-[0_12px_28px_rgba(0,0,0,0.10)]"
