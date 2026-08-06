@@ -42,7 +42,10 @@ export function warmMediaUrl(url: string | undefined) {
  * above.
  */
 const PANEL_WARM: Record<string, () => void> = {
-  fun: () => warmMediaUrl("/media/fun/summer.mp4"),
+  fun: () => {
+    warmMediaUrl("/media/fun/summer.mp4");
+    warmMediaUrl("/media/fun/poster.jpg");
+  },
 };
 
 /**

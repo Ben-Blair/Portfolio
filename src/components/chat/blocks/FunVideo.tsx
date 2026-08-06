@@ -51,6 +51,7 @@ export function FunVideo({
         alt=""
         aria-hidden
         fill
+        preload
         sizes="(max-width: 768px) 100vw, 640px"
         className={`pointer-events-none absolute inset-0 object-cover transition-opacity duration-200 ${
           buffering ? "opacity-100" : "opacity-0"
