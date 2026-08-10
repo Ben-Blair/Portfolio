@@ -1,60 +1,70 @@
 ---
 title: High-Power Rocket
-tagline: Designed, built, flown — and then scanned into a splat you can spin.
-date: 2026-07-01
+tagline: A modified LOC IV, an H motor, and a Tripoli Level 1 certification.
+date: 2026-08-08
 featured: true
-order: 4
-draft: true
-status: Draft — waiting on the scan
+order: 2
+status: Tripoli L1 certified
 accent: "#dc2626"
-tags: [Rocketry, Composites, Fusion 360, Avionics]
-cover: /media/high-power-rocket/cover.svg
+tags: [Rocketry, Tripoli L1, OpenRocket, High Power]
+cover: /media/high-power-rocket/launch-poster.jpg
 links: []
 media:
-  - type: splat
-    src: /splats/rocket.spz
-    poster: /media/high-power-rocket/cover.svg
-    caption: Scanned with the splat pipeline, rendered live.
   - type: video
     src: /media/high-power-rocket/launch.mp4
     poster: /media/high-power-rocket/launch-poster.jpg
-    caption: Launch day.
-  - type: youtube
-    id: REPLACE_ME
-    title: Onboard camera, full flight
-  - type: livephoto
-    poster: /media/high-power-rocket/pad.jpg
-    src: /media/high-power-rocket/pad.mp4
-    caption: On the pad.
-  - type: gallery
-    columns: 3
-    items:
-      - { src: /media/high-power-rocket/build-1.jpg, alt: Airframe layup }
-      - { src: /media/high-power-rocket/build-2.jpg, alt: Avionics bay }
-      - { src: /media/high-power-rocket/build-3.jpg, alt: Fin can alignment }
+    loop: true
+    autoplay: true
+    caption: Liftoff on an H219T, off pad 4.
 ---
 
-{/*
-  ────────────────────────────────────────────────────────────────────────────
-  This file is `draft: true`, so it does not appear anywhere on the site yet.
-  It exists as a working template showing all six media types in one project.
+This is the flight that earned my [Tripoli](https://www.tripoli.org/) Level 1 certification — the
+first rung of high-power rocketry, and the one that unlocks H and I class motors. The rule is
+simple and unforgiving: build it, fly it on an H or an I, and recover it in flyable condition. One
+flight, witnessed, no second attempt on the same airframe if you break it.
 
-  To ship it:
-    1. Put your files in public/media/high-power-rocket/ and public/splats/
-    2. Fix the paths above (delete any media entry you don't have)
-    3. Replace REPLACE_ME with the real YouTube id
-    4. Write the body below
-    5. Delete the `draft: true` line
+## The airframe
 
-  Delete this whole file if you'd rather start clean.
-  ────────────────────────────────────────────────────────────────────────────
-*/}
+It started as a [LOC Precision IV](https://locprecision.com/) kit and got modified in two ways,
+both aimed at the same thing.
 
-Write the story here: what you were trying to fly, what the airframe is made of, how the recovery
-system works, what went wrong the first time, and what the altimeter said.
+**The payload section came off**, and **weight went into the nose cone.** Together those move the
+center of gravity forward, which is the whole game — a rocket is stable when its CG sits ahead of
+its center of pressure, and it weathercocks into the wind or tumbles when it doesn't. Stripping the
+payload bay shortens the airframe and takes mass out from behind the CG; nose weight adds mass in
+front of it. The simulation put the finished rocket at 1.26 calibers of margin, which is
+comfortably inside the rule of thumb that you want at least one caliber and rarely more than two.
 
-## Build
+## The numbers
 
-## Flight
+These are the predictions out of the OpenRocket model I flew against, not telemetry — with the
+payload section removed there was nowhere to put an altimeter, so the sim is the only record of
+what the flight should have looked like.
 
-## What I'd change
+- **Motor** — H219T-10
+- **Apogee** — 711 m
+- **Max velocity** — 162 m/s, Mach 0.477
+- **Max acceleration** — 214 m/s²
+- **Length / diameter** — 94.4 cm / 10.2 cm
+- **Mass, dry / loaded** — 1075 g / 1336 g
+- **CG / CP** — 55.9 cm / 68.7 cm
+- **Stability margin** — 1.26 cal (13.6%)
+
+<Media
+  type="image"
+  src="/media/high-power-rocket/stats.webp"
+  fit="contain"
+  alt="OpenRocket simulation summary: the airframe in profile with CG and CP marked, above the predicted apogee, max velocity, and max acceleration"
+  caption="The OpenRocket model, with CG (blue) ahead of CP (red) — the margin that makes it fly straight."
+/>
+
+The `-10` on the motor designation is the ejection delay: ten seconds between burnout and the
+charge that pops the chute. That number gets picked to fire at apogee, where the rocket is moving
+slowest and the parachute has the least to fight. Too short and you deploy into the climb; too long
+and it's already nose-down and picking up speed.
+
+## What's next
+
+Level 2 is the near-term goal. That means a written exam on high-power safety and regulations, and
+a flight on a J, K, or L motor — a jump in impulse that puts the next airframe well past what a
+modified LOC IV will take.
