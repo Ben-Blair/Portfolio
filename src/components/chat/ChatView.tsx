@@ -2,11 +2,18 @@
 
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
-import { ArrowRight, Info, Square } from "lucide-react";
+import { ArrowRight, Square } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { Answer, TypingDots, withoutPartialBold, wordBoundary } from "@/components/chat/Answer";
+import {
+  Answer,
+  TypingDots,
+  withoutMediaTokens,
+  withoutPartialBold,
+  withoutPartialMedia,
+  wordBoundary,
+} from "@/components/chat/Answer";
 import { DockShell } from "@/components/chat/DockShell";
 import { ErrorLine } from "@/components/chat/ErrorLine";
 import { QuestionBubble } from "@/components/chat/QuestionBubble";
@@ -17,14 +24,6 @@ import { PANEL_EXIT_MS, PANEL_THINKING_MS } from "@/components/chat/timing";
 import { useReducedMotion } from "@/components/chat/useReducedMotion";
 import { useTypewriter } from "@/components/chat/useTypewriter";
 import { warmPanel } from "@/components/chat/warm";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { profile } from "@content/profile";
 
@@ -125,7 +124,13 @@ export function ChatView() {
   // answer flashes underneath the new question's bubble before being cleared.
   const answer = lastText(messages, "user") === query ? lastText(messages, "assistant") : "";
 
-  const { typed, tail, typing } = useTypewriter(answer, { active: Boolean(query), done: !busy });
+  // Upstream of the typing, so a half-arrived `[media:…]` never reaches the screen by any route.
+  // Guarding the typed prefix instead would leave the tail uncovered, and the tail is not only the
+  // grace period running out — pressing Stop ends the answer wherever it had got to, which can be
+  // the middle of a token, and that one would sit there for good.
+  const visible = withoutPartialMedia(answer);
+
+  const { typed, tail, typing } = useTypewriter(visible, { active: Boolean(query), done: !busy });
 
   // Mid-stream the partial-bold guard is doing real work; once there's a tail the answer is
   // whole, its markers are all closed, and the guard has nothing to find.
@@ -134,35 +139,22 @@ export function ChatView() {
   const fadeFrom = tail ? (typed ? wordBoundary(shown, typed.length) : 0) : null;
 
   // The bubble clears when there's a first character to take its place, rather than when the
-  // first token lands — otherwise it makes room for an empty page.
-  const started = shown.length > 0;
+  // first token lands — otherwise it makes room for an empty page. Measured on the words alone:
+  // an answer that opens with a picture is several dozen characters long before it has anything
+  // to show, and the dots should still be up.
+  const started = withoutMediaTokens(shown).length > 0;
+
+  // Whether the answer is still landing — streaming, or typed out behind the stream. It's the
+  // caret's condition, and it's also which copy of the answer belongs to a screen reader: while
+  // this is true the prose on screen is decoration and the live region reads it, and when it goes
+  // false they trade places. Only ever one of them in the accessibility tree, which is what keeps
+  // the link inside the answer reachable exactly once.
+  const arriving = busy || typing;
 
   return (
     // bg-white rather than the site's PageBackdrop: this page is mostly body copy, and the
     // reference it's built from is plain. Drop the class to put the wash back.
     <div className="relative flex min-h-[100svh] flex-col bg-white">
-      <Dialog>
-        <DialogTrigger
-          aria-label="About this chat"
-          className="glass fixed right-4 top-4 z-40 flex size-9 items-center justify-center rounded-full text-neutral-500 hover:text-neutral-900"
-          data-glass
-          suppressHydrationWarning
-        >
-          <Info className="size-4" />
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>About this chat</DialogTitle>
-            <DialogDescription>
-              You&apos;re talking to a model answering as {profile.name}, from his projects and
-              resume. It gets things wrong sometimes — for anything that matters, email{" "}
-              <a href={`mailto:${profile.email}`}>{profile.email}</a> and you&apos;ll reach the
-              actual person.
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-
       <div className="flex flex-1 flex-col px-5 pb-10 pt-28 sm:pt-32">
         {/* `my-auto` centres short content in the gap between the avatar and the input, then
             collapses to normal flow once there's enough of it to need the room.
@@ -206,20 +198,49 @@ export function ChatView() {
             </div>
           ) : (
             <div>
-              {/* Decorative, all of it: the bubble repeats what the visitor just typed, and the
-                  answer is the same text the live region below carries, only drawn a character
-                  at a time. Announcing that character by character would be unusable. */}
-              <div aria-hidden="true">
-                {query && <QuestionBubble question={query} hidden={started} />}
+              {/* Decorative, most of it: the bubble repeats what the visitor just typed, and the
+                  prose is the same text the live region below carries, only drawn a character at
+                  a time. Announcing that character by character would be unusable.
 
-                {started && <Answer text={shown} fadeFrom={fadeFrom} caret={busy || typing} />}
+                  Hidden piece by piece rather than all at once, though. The pictures an answer
+                  draws are not decoration — a carousel has buttons, a YouTube still has a play
+                  target — and `aria-hidden` on a wrapper would leave those in the tab order while
+                  taking them out of the accessibility tree, which is the worst of both. `Answer`
+                  puts it on its paragraphs instead; see `mirrored` there, and the same call
+                  already made for panels in `reveal.tsx`. */}
+              <div>
+                {query && (
+                  <div aria-hidden="true">
+                    <QuestionBubble question={query} hidden={started} />
+                  </div>
+                )}
 
-                {busy && !started && <TypingDots />}
+                {started && (
+                  <Answer
+                    text={shown}
+                    fadeFrom={fadeFrom}
+                    caret={arriving}
+                    mirrored={arriving}
+                  />
+                )}
+
+                {busy && !started && (
+                  <div aria-hidden="true">
+                    <TypingDots />
+                  </div>
+                )}
               </div>
 
-              {/* Screen-reader users get told an answer arrived; everyone else watches it type. */}
+              {/* Screen-reader users get told an answer arrived; everyone else watches it type.
+                  Tokens stripped, not described: the pictures are in the tree on their own and
+                  announce themselves off their alt text and captions.
+
+                  Emptied once the answer has landed, handing the reading back to the prose above —
+                  which by then says the same thing, in the same order, with its links live. The
+                  full text sat here for the whole of the typing before that, so there's nothing
+                  left unannounced. */}
               <div aria-live="polite" aria-busy={busy}>
-                <p className="sr-only">{answer}</p>
+                <p className="sr-only">{arriving ? withoutMediaTokens(answer) : ""}</p>
 
                 {/* Nothing above it when the model fails before writing anything — the bubble
                     brings its own spacing, and it's still there in that case. */}
