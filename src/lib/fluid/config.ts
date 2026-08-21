@@ -65,7 +65,7 @@ export const FLUID_CONFIG: FluidConfig = {
   PRESSURE_ITERATIONS: 12,
 
   /** How much pressure carries between frames. */
-  PRESSURE: 0.5,
+  PRESSURE: 0.44,
 
   /** Vorticity confinement strength — this is what puts the curls back in. */
   CURL: 3,
@@ -79,7 +79,7 @@ export const FLUID_CONFIG: FluidConfig = {
    * lay down ribbons with actual edges, which is what the lensing and the colour fringing have
    * to work with.
    */
-  SPLAT_RADIUS: 0.18,
+  SPLAT_RADIUS: 0.17,
 
   /** How hard a cursor move shoves the fluid. */
   SPLAT_FORCE: 6200,
@@ -90,13 +90,13 @@ export const FLUID_CONFIG: FluidConfig = {
    * end result, but dense and faint dye keep their relative contrast rather than both being
    * crushed toward zero before the display pass sees them.
    */
-  SPLAT_INTENSITY: 0.29,
+  SPLAT_INTENSITY: 0.3,
 
   /**
    * Overall opacity of the whole canvas, and the counterweight to SPLAT_INTENSITY above.
    * The headline sits directly on top of this and has to stay readable.
    */
-  OPACITY: 0.73,
+  OPACITY: 0.46,
 
   /**
    * Strength of the fake directional light on the dye gradient, which gives ribbons a lit
