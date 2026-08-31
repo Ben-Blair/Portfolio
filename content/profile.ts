@@ -63,7 +63,6 @@ export const profile = {
   socials: [
     { label: "GitHub", href: "https://github.com/Ben-Blair" },
     { label: "Email", href: "mailto:1benblair@gmail.com" },
-    { label: "Jesus Club CU", href: "https://jesusclubcu.com" },
   ],
 
   /**
