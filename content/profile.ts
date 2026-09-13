@@ -31,7 +31,7 @@ export const profile = {
    */
   intro: [
     "Hey 👋",
-    "I'm Ben, a Computer Science junior at CU Boulder, class of 2027. I build software for physical systems — mmWave radar, computer vision on a Raspberry Pi, ESP32 firmware, and 3D scans you can spin around in a browser.",
+    "I'm Ben, a Computer Science senior at CU Boulder, class of 2027. I build software for physical systems — mmWave radar, computer vision on a Raspberry Pi, ESP32 firmware, and 3D scans you can spin around in a browser.",
     "This summer I built and self-hosted a full-stack operations platform that replaced a company's SaaS subscription, so I'm equally at home in Next.js and TypeScript.",
     "I'm looking for software engineering work with direct real-world impact.",
   ],
@@ -48,7 +48,7 @@ export const profile = {
 
   /** Longer version for the About page. Each string is a paragraph. */
   about: [
-    "I'm a junior studying Computer Science at the University of Colorado Boulder, graduating in 2027. Most of what I build sits where software meets the physical world: cameras, sensors, radar, rockets, and 3D scans of real objects.",
+    "I'm a senior studying Computer Science at the University of Colorado Boulder, graduating in 2027. Most of what I build sits where software meets the physical world: cameras, sensors, radar, rockets, and 3D scans of real objects.",
     "That's meant training anomaly detection models to run on a Raspberry Pi, mapping rooms with mmWave radar, writing ESP32 firmware in C++, and building Gaussian splatting pipelines to turn things I've made into models you can spin around in a browser — like the ones on this site.",
     "The other half is production software. This past summer I interned at Niguel Point Property Management, where I built and self-hosted a full-stack operations platform in Next.js and TypeScript that replaced the company's SaaS subscription, plus a Python scraping pipeline that runs in an ephemeral cloud sandbox and delivers 74 reports a week.",
     "I also founded Jesus Club CU, a student club at Boulder, which taught me as much about shipping and maintaining something people actually depend on as any codebase has.",
