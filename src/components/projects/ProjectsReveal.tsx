@@ -35,7 +35,16 @@ import type { Project } from "@/lib/schema";
  * `.reveal-*` (globals.css) already answers `prefers-reduced-motion`, so there's no `motion-reduce:`
  * to write here.
  */
-export function ProjectsReveal({ projects, asked }: { projects: Project[]; asked: boolean }) {
+export function ProjectsReveal({
+  projects,
+  asked,
+  /** The typed question that routed here, if any. Straight through to `ProjectsIntro`. */
+  question,
+}: {
+  projects: Project[];
+  asked: boolean;
+  question?: string;
+}) {
   const [ready, setReady] = useState(!asked);
 
   // The last section confirmed fully settled — see `ProjectSection`'s `onSettled`. A section's own
@@ -49,7 +58,7 @@ export function ProjectsReveal({ projects, asked }: { projects: Project[]; asked
 
   return (
     <>
-      {asked && <ProjectsIntro onSettled={() => setReady(true)} />}
+      {asked && <ProjectsIntro question={question} onSettled={() => setReady(true)} />}
 
       <div className={ready ? undefined : "opacity-0"}>
         {projects.map((project, index) => (

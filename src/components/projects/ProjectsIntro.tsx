@@ -23,7 +23,21 @@ import { useReducedMotion } from "@/components/chat/useReducedMotion";
 /** The pill's label, expanded into something a person would actually type. Was in `panels.tsx`. */
 const QUESTION = "What have you built?";
 
-export function ProjectsIntro({ onSettled }: { onSettled: () => void }) {
+export function ProjectsIntro({
+  /**
+   * What was actually typed, when a free-text question was routed here instead of a pill being
+   * clicked — "show me your portfolio" should be the words in the bubble, not the wording the pill
+   * would have used. Falls back to `QUESTION` for a pill click, which carries no query.
+   *
+   * The same call `ChatView` makes for a written panel (`query || panel.question`), so a question
+   * reaching this page and a question reaching the chat behave identically.
+   */
+  question,
+  onSettled,
+}: {
+  question?: string;
+  onSettled: () => void;
+}) {
   const reduced = useReducedMotion();
 
   // The same two beats `ChatView` gives a written panel, for the same reasons — see
@@ -125,7 +139,7 @@ export function ProjectsIntro({ onSettled }: { onSettled: () => void }) {
         <div className="min-h-0 overflow-hidden">
           {/* The chat's measure, so the bubble and the dots sit exactly where they would on /chat. */}
           <div className="mx-auto w-full max-w-2xl pt-28 pb-8 sm:pt-32">
-            <QuestionBubble question={QUESTION} hidden={exiting} lift />
+            <QuestionBubble question={question || QUESTION} hidden={exiting} lift />
 
             {/* The same `1fr → 0fr` close the question is doing above it, so both are out of the
                 layout by the frame they're done. `min-h-0` rather than `overflow-hidden`: the dots

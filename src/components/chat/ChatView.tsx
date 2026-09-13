@@ -18,7 +18,7 @@ import { DockShell } from "@/components/chat/DockShell";
 import { ErrorLine } from "@/components/chat/ErrorLine";
 import { QuestionBubble } from "@/components/chat/QuestionBubble";
 import { PANELS } from "@/components/chat/blocks/panels";
-import { chatHref } from "@/components/chat/href";
+import { chatHref, panelHref } from "@/components/chat/href";
 import { PanelAnswer } from "@/components/chat/reveal";
 import { PANEL_EXIT_MS, PANEL_THINKING_MS } from "@/components/chat/timing";
 import { useReducedMotion } from "@/components/chat/useReducedMotion";
@@ -26,6 +26,18 @@ import { useTypewriter } from "@/components/chat/useTypewriter";
 import { warmPanel } from "@/components/chat/warm";
 import { cn } from "@/lib/utils";
 import { profile } from "@content/profile";
+
+/**
+ * How long the page will wait for `/api/route-intent` before giving up on being redirected.
+ *
+ * A backstop for a classifier that hangs, not the thing that protects the reading experience — that
+ * is the `startedRef` check, which stops a redirect the moment there are words on screen no matter
+ * how fast the answer arrived. So this can afford to be generous, and should be: measured locally the
+ * classifier answers in 0.76–1.02s, and a 1.5s deadline would start throwing away correct routes on a
+ * cold function for no benefit. The answer it's racing takes 9.7–28.9s to its first token
+ * (`lib/ai.ts`), so nothing here is ever close to being late.
+ */
+const ROUTE_DEADLINE_MS = 2500;
 
 /**
  * The last thing `role` said, with its text parts joined — one reply can arrive as several.
@@ -150,6 +162,69 @@ export function ChatView() {
   // false they trade places. Only ever one of them in the accessibility tree, which is what keeps
   // the link inside the answer reachable exactly once.
   const arriving = busy || typing;
+
+  /**
+   * Whether an answer is visibly underway, readable from inside an async callback.
+   *
+   * A ref as well as a value because the redirect below has to check it *when its response lands*,
+   * not when it was sent. Closing over `started` would capture the value from the render that fired
+   * the request, which is always `false` — that's the whole reason the request was made.
+   */
+  const startedRef = useRef(false);
+  useEffect(() => {
+    startedRef.current = started;
+  }, [started]);
+
+  /**
+   * The second half of the intent routing: ask whether this question really wanted one of the pills'
+   * pages, and go there if so.
+   *
+   * `panelIntent.ts`'s patterns have already had their turn — synchronously, before the navigation
+   * that landed here — so anything reaching this point is a phrasing no pattern caught. The answer is
+   * already streaming underneath this; the redirect is a race against it, and it is allowed to lose.
+   * Three things make losing safe:
+   *
+   * - `startedRef`, so a reply the visitor has begun reading is never yanked away. Past that moment
+   *   the answer is the better outcome anyway.
+   * - `ROUTE_DEADLINE_MS`, so a slow classifier can't redirect a minute later out of nowhere.
+   * - `router.replace` rather than `push`, so Back goes where the visitor came from instead of
+   *   returning to a URL that would immediately redirect again.
+   *
+   * No once-per-query guard, unlike `asked` above. A duplicate request here costs one cheap call and
+   * nothing else, where the guard would cost more: React's development double-invoke would claim the
+   * query on the first pass and skip the fetch on the second, so the feature would appear not to work
+   * in exactly the place anyone would go to check it.
+   */
+  useEffect(() => {
+    if (!query || panelKey) return;
+
+    const controller = new AbortController();
+    const deadline = setTimeout(() => controller.abort(), ROUTE_DEADLINE_MS);
+
+    fetch("/api/route-intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: query }),
+      signal: controller.signal,
+    })
+      .then((res) => res.json())
+      .then(({ panel }: { panel: string | null }) => {
+        if (!panel || startedRef.current) return;
+        // The model call this page made on arrival is now waste — the answer is a written panel or
+        // another page. Stopping it keeps a redirect from costing a full generation nobody reads.
+        stop();
+        router.replace(panelHref(panel, query));
+      })
+      // Aborts land here too. There is nothing to do about any of it: no route means the answer
+      // already on its way is the answer.
+      .catch(() => {})
+      .finally(() => clearTimeout(deadline));
+
+    return () => {
+      clearTimeout(deadline);
+      controller.abort();
+    };
+  }, [query, panelKey, router, stop]);
 
   return (
     // bg-white rather than the site's PageBackdrop: this page is mostly body copy, and the
@@ -309,7 +384,9 @@ export function ChatView() {
                 onBlur={() => setFocused(false)}
                 placeholder="Ask me anything..."
                 aria-label={`Ask ${profile.name} anything`}
-                className="w-full flex-1 rounded-full bg-transparent py-3.5 pl-4 pr-14 text-[15px] text-neutral-800 outline-none placeholder:text-neutral-600"
+                // `text-base` below `sm:` stops iOS zooming the page on focus; see the same note in
+                // `ChatDock`, which owns the other copy of this field.
+                className="w-full flex-1 rounded-full bg-transparent py-3.5 pl-4 pr-14 text-base text-neutral-800 outline-none placeholder:text-neutral-600 sm:text-[15px]"
               />
               <button
                 type={busy ? "button" : "submit"}

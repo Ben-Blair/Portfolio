@@ -23,7 +23,11 @@ export default async function ProjectsPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const asked = (await searchParams).ask === "1";
+  const params = await searchParams;
+  const asked = params.ask === "1";
+  // Present when a typed question was routed here rather than the pill being clicked — see
+  // `panelHref` in `src/components/chat/href.ts`. It's what goes in the bubble.
+  const question = typeof params.query === "string" ? params.query : undefined;
   const projects = getProjects();
 
   if (projects.length === 0) {
@@ -44,7 +48,7 @@ export default async function ProjectsPage({
     <>
       <BackHome />
 
-      <ProjectsReveal projects={projects} asked={asked} />
+      <ProjectsReveal projects={projects} asked={asked} question={question} />
     </>
   );
 }

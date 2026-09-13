@@ -8,6 +8,7 @@ import {
   chatModel,
   isChatConfigured,
 } from "@/lib/ai";
+import { clientIp, rateLimited } from "@/lib/rateLimit";
 import { profile } from "@content/profile";
 
 export const runtime = "nodejs";
@@ -15,27 +16,6 @@ export const maxDuration = 60;
 
 const MAX_MESSAGES = 24;
 const MAX_CHARS = 1500;
-
-/** Crude per-IP limiter. Fine for a portfolio; swap for Upstash if this ever gets real traffic. */
-const RATE_LIMIT = { windowMs: 60_000, max: 20 };
-const hits = new Map<string, { count: number; resetAt: number }>();
-
-function rateLimited(ip: string) {
-  const now = Date.now();
-  const entry = hits.get(ip);
-
-  if (!entry || now > entry.resetAt) {
-    hits.set(ip, { count: 1, resetAt: now + RATE_LIMIT.windowMs });
-    // Opportunistic cleanup so the map can't grow without bound.
-    if (hits.size > 5000) {
-      for (const [key, value] of hits) if (now > value.resetAt) hits.delete(key);
-    }
-    return false;
-  }
-
-  entry.count += 1;
-  return entry.count > RATE_LIMIT.max;
-}
 
 export async function POST(req: Request) {
   if (!isChatConfigured()) {
@@ -48,15 +28,7 @@ export async function POST(req: Request) {
     );
   }
 
-  // Vercel appends the real client IP to x-forwarded-for, so the first entry is
-  // whatever a client chose to send — take the last one instead so it can't be spoofed
-  // to dodge the rate limit.
-  const ip =
-    req.headers.get("x-real-ip") ??
-    req.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ??
-    "unknown";
-
-  if (rateLimited(ip)) {
+  if (rateLimited(clientIp(req))) {
     return Response.json(
       {
         error: "rate_limited",

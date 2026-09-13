@@ -21,6 +21,75 @@ export const CHAT_MODEL_ID = "gemini-3.5-flash";
 export const chatModel = () => google(CHAT_MODEL_ID);
 
 /**
+ * The router behind `/api/route-intent`, which decides whether a typed question is really a request
+ * for one of the pills' pages. A different model from the one that answers, on purpose.
+ *
+ * `flash-lite` because this is a single choice from a fixed list, which is the cheapest thing a model
+ * can be asked to do, and because latency is the entire point: the regex in `panelIntent.ts` catches
+ * the obvious phrasings in zero milliseconds, and this only earns its place if it resolves the long
+ * tail fast enough to redirect before anyone has started reading an answer.
+ *
+ * Note what this deliberately does NOT get: `buildSystemPrompt()`. That inlines every project's full
+ * body and the whole resume, and it is most of what the 9.7–28.9s time-to-first-word measured below
+ * is paying for. Choosing between six words needs none of it.
+ */
+export const ROUTER_MODEL_ID = "gemini-3.5-flash-lite";
+export const routerModel = () => google(ROUTER_MODEL_ID);
+
+/** "Answer this normally" — the enum member that means no page fits. */
+export const NO_ROUTE = "none";
+
+/**
+ * What each destination is for, in one line each, as the only context the router gets.
+ *
+ * Written as what a *visitor* would be asking for rather than as what the page contains, because
+ * that's the judgement being made: the question is never "is this question about projects", it's
+ * "would this person rather be looking at the projects page than reading a paragraph". Those come
+ * apart — "how did you build the rocket?" is about a project and still wants the paragraph.
+ */
+const ROUTE_DESCRIPTIONS: Record<string, string> = {
+  projects: "wants to browse the work itself — a portfolio, a list, something to look at",
+  me: "wants to know who Ben is — background, story, introduction",
+  skills: "wants the technical skill set — languages, tools, what he's good at",
+  fun: "wants what he does outside work — hobbies, free time",
+  contact: "wants to get in touch — email, how to reach him",
+  resume: "wants the resume or CV specifically",
+};
+
+/**
+ * The router's prompt. Tiny by design; see `routerModel`.
+ *
+ * Biased toward `none` in both the rule and the examples. A wrong redirect is much worse than a
+ * missed one: missing just means the question gets the prose answer it would have got anyway, while
+ * a wrong one takes the page away from someone who asked something specific and lands them on a
+ * list that doesn't address it.
+ */
+export function buildRouterPrompt(question: string, keys: string[]): string {
+  const options = keys
+    .filter((key) => ROUTE_DESCRIPTIONS[key])
+    .map((key) => `- ${key}: ${ROUTE_DESCRIPTIONS[key]}`)
+    .join("\n");
+
+  return `Someone typed this into the search box on Ben Blair's portfolio site:
+
+"${question}"
+
+Pick the page that would serve them better than a written answer, or "${NO_ROUTE}".
+
+${options}
+- ${NO_ROUTE}: anything else — including any question with a specific answer, however much it touches one of the topics above
+
+Choose a page only when the question is a request to *see* that page, with no particular answer being
+asked for. If they asked something a paragraph would answer, choose ${NO_ROUTE}.
+
+"got anything I can look at?" → projects
+"what have you been working on lately?" → projects
+"how did you build the rocket?" → ${NO_ROUTE}
+"what got you into computer vision?" → ${NO_ROUTE}
+"are you available for an internship?" → ${NO_ROUTE}`;
+}
+
+/**
  * Passed to `streamText` in the chat route. Provider-specific, so it lives here with the model
  * rather than in the route.
  *
