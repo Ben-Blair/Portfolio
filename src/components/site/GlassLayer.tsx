@@ -57,6 +57,16 @@ const SVG_NS = "http://www.w3.org/2000/svg";
  */
 const DISPERSION = 0.1;
 
+/**
+ * How long a resizing element has to hold still before its map is rebuilt.
+ *
+ * The timer restarts on every observed resize, so what this has to clear is the gap between frames
+ * (~16ms), not the length of the animation — a 300ms transition simply never reaches the end of it
+ * until the transition is over. Comfortably above one frame, comfortably below the point where it
+ * would read as the glass lagging behind a finished window drag. See `scheduleUpdate`.
+ */
+const RESIZE_SETTLE_MS = 120;
+
 type Entry = {
   id: string;
   filter: SVGFilterElement;
@@ -246,8 +256,36 @@ export function GlassLayer() {
       (el as HTMLElement).style.setProperty("--glass-filter", `url(#${entry.id})`);
     }
 
+    /**
+     * Resize-driven rebuilds, deferred until the box stops moving.
+     *
+     * `update` is cheap only when it early-returns on an unchanged key. When the size is genuinely
+     * changing it calls `buildDisplacementMap`, which is a per-pixel loop with a `Math.hypot` each
+     * and a PNG encode at the end — on the dock at device pixel ratio 3 that's ~360k iterations.
+     * Synchronously, in a ResizeObserver callback, is fine for a window resize and ruinous for an
+     * animation: the dock's pill row collapses by animating its height, so every frame of it is a
+     * distinct size, and unthrottled this rebuilt the map ~18 times over 300ms and stuffed all 18
+     * into `buildDisplacementMap`'s module cache for good.
+     *
+     * Waiting for quiet costs nothing visible. Through the transition the element keeps the filter it
+     * already had, so its rim refraction is a couple of px out of register for those 300ms while the
+     * `.glass` fill and specular edge — the parts anyone is actually looking at — are untouched.
+     */
+    const pending = new Map<Element, ReturnType<typeof setTimeout>>();
+
+    const scheduleUpdate = (el: Element) => {
+      clearTimeout(pending.get(el));
+      pending.set(
+        el,
+        setTimeout(() => {
+          pending.delete(el);
+          update(el);
+        }, RESIZE_SETTLE_MS),
+      );
+    };
+
     const resizeObserver = new ResizeObserver((observed) => {
-      for (const { target } of observed) update(target);
+      for (const { target } of observed) scheduleUpdate(target);
     });
 
     function sync() {
@@ -266,6 +304,9 @@ export function GlassLayer() {
       for (const [el, entry] of entries) {
         if (found.has(el)) continue;
         resizeObserver.unobserve(el);
+        // A removed element can still have a deferred rebuild in flight — see `scheduleUpdate`.
+        clearTimeout(pending.get(el));
+        pending.delete(el);
         entry.filter.remove();
         entries.delete(el);
       }
@@ -279,6 +320,8 @@ export function GlassLayer() {
     return () => {
       mutationObserver.disconnect();
       resizeObserver.disconnect();
+      for (const timer of pending.values()) clearTimeout(timer);
+      pending.clear();
       for (const entry of entries.values()) entry.filter.remove();
       entries.clear();
     };

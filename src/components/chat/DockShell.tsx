@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { PillRow } from "@/components/chat/PillRow";
+import { useDockCollapse } from "@/components/chat/useDockCollapse";
 import { cn } from "@/lib/utils";
 
 /**
@@ -17,6 +18,11 @@ import { cn } from "@/lib/utils";
  *
  * `/chat` and `/projects` both render this so the furniture doesn't move when you cross between
  * them. The hero doesn't — it has room to spread out and a fluid sim worth floating tiles over.
+ *
+ * On a phone the row also gets out of the way: scrolling down sinks it into the field, scrolling up
+ * rises it back out. See `useDockCollapse` for the scroll half and the note on the clip below for
+ * why it reads as rising rather than as a panel opening. Desktop is unaffected — the whole thing is
+ * one `sm:` override.
  */
 export function DockShell({
   activePanel,
@@ -42,6 +48,29 @@ export function DockShell({
 }) {
   const shellRef = useRef<HTMLDivElement>(null);
   const frame = useRef(0);
+
+  /**
+   * Whether the pill row is showing. The scroll direction decides it, except that keyboard focus
+   * overrides: the collapsed row is clipped rather than unmounted, so it's still tabbable, and a
+   * focused pill inside an `overflow-hidden` box would otherwise scroll that box invisibly instead
+   * of coming into view — the row stays shut and the focus ring is nowhere on screen.
+   *
+   * Held as state across the whole row rather than expressed as `focus-within:` in CSS, because it
+   * has to survive focus moving *between* pills. `focusout` fires before the next `focusin`, so the
+   * CSS version drops to closed for a frame between each tab press, which reads as the row
+   * flickering its way through the navigation. Released only when focus lands somewhere outside.
+   */
+  const [focusHeld, setFocusHeld] = useState(false);
+  const scrolledOpen = useDockCollapse(fieldFocused);
+  const open = scrolledOpen || focusHeld;
+
+  const holdFocus = useCallback(() => setFocusHeld(true), []);
+  const releaseFocus = useCallback((event: React.FocusEvent<HTMLDivElement>) => {
+    // `relatedTarget` is where focus is going. Null means it left the document entirely (the visitor
+    // switched tabs), which shouldn't shut the row out from under them either.
+    const next = event.relatedTarget as Node | null;
+    if (next && !event.currentTarget.contains(next)) setFocusHeld(false);
+  }, []);
 
   /**
    * Where the light is. `.glass-sheen` paints a soft radial at `--px`/`--py`; this just says where
@@ -109,20 +138,46 @@ export function DockShell({
       data-glass
       suppressHydrationWarning
     >
-      {/* Dimmed while the field has focus, so the thing you're typing into owns the surface. */}
-      <PillRow
-        variant="inline"
-        activePanel={activePanel}
+      {/* The collapsing half. `grid-template-rows: 1fr → 0fr` with `min-h-0` inside it is how the
+          rest of this codebase closes a row — see `ChatView`'s typing dots and `ProjectsIntro` —
+          and it's used here for the same reason: it animates to the content's real height without
+          anyone having to measure it.
+
+          `sm:grid-rows-[1fr]` is the entire breakpoint. Above 640px the track is always open no
+          matter what the scroll says, so the desktop dock is exactly what it was. */}
+      <div
+        onFocusCapture={holdFocus}
+        onBlurCapture={releaseFocus}
         className={cn(
-          "px-2 pt-2 transition-opacity duration-200",
-          fieldFocused && "opacity-70",
+          "grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none",
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr] sm:grid-rows-[1fr]",
         )}
-      />
-      {/* Fading at both ends rather than a drawn hairline. A rule that stops dead at each edge is
-          a card convention; one that arrives and leaves reads as light catching a step in the
-          surface, which is what the seam between these two rows actually is. Inset so it stops
-          short of the specular rim instead of running into it. */}
-      <div className="mx-2 mt-2 h-px bg-gradient-to-r from-transparent via-black/[0.07] to-transparent" />
+      >
+        {/* `justify-end` is what makes this read as the pills rising out of the field rather than as
+            a panel unrolling downward. A flex container shorter than its content overflows at its
+            *start* edge, which anchors the row to the bottom of the clip — the edge against the
+            input. So the hairline is the first thing to appear and the pills come up out of it, and
+            on the way down they sink back into the same place. Top-anchored clipping animates the
+            identical height over the identical duration and reads completely differently: the row
+            stays put and gets eaten from below. */}
+        <div className="flex min-h-0 flex-col justify-end overflow-hidden">
+          {/* Dimmed while the field has focus, so the thing you're typing into owns the surface. */}
+          <PillRow
+            variant="inline"
+            activePanel={activePanel}
+            open={open}
+            className={cn(
+              "px-2 pt-2 transition-opacity duration-200",
+              fieldFocused && "opacity-70",
+            )}
+          />
+          {/* Fading at both ends rather than a drawn hairline. A rule that stops dead at each edge is
+              a card convention; one that arrives and leaves reads as light catching a step in the
+              surface, which is what the seam between these two rows actually is. Inset so it stops
+              short of the specular rim instead of running into it. */}
+          <div className="mx-2 mt-2 h-px bg-gradient-to-r from-transparent via-black/[0.07] to-transparent" />
+        </div>
+      </div>
       <div className="p-2">{children}</div>
     </div>
   );

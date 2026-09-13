@@ -122,11 +122,56 @@ const PILL_ICONS: Record<string, LucideIcon> = {
  * smudge on the surface; light reads as the surface catching more of it, which is the thing the
  * material is pretending to be. `active:scale` is the other half of that — glass you press should
  * give slightly.
+ *
+ * Both variants are tighter below `sm:`, for the same reason in two shapes: five of these do not fit
+ * across a phone at the desktop sizing. The inline row needs ~495px and has 334px, and the stacked
+ * tiles need ~550px of the hero's 350px, so both wrapped to "Me / Projects / Skills" over "Fun /
+ * Contact" — which costs a whole extra row of height to say nothing new, on the one screen with no
+ * height to spare. The mobile numbers below put all five on one line in each case.
+ *
+ * Both are additionally a fixed `w-[…]` *below* `sm:` only — every other size in both variants is
+ * the padding-driven, content-hugging width the rest of the site uses, and content-hugging is why
+ * "Me" and "Contact" used to read as visibly different-sized buttons: a short label gets a short
+ * button. On a phone this row is the whole nav — the one place on the site meant to read as a set
+ * of equal buttons rather than a sentence — so the mismatch showed there in a way it doesn't
+ * elsewhere. Fixed to the widest label's own measured width at each variant's mobile sizing
+ * (`inline`: 50px of text, icon hidden below `sm:` — `ICON_VARIANTS`; `stacked`: same 50px text,
+ * icon stacked above it rather than beside it so it doesn't add to the width) plus enough padding
+ * that the label isn't touching the edges. `items-center` (below, shared by both) centers the
+ * shorter labels inside that same box on the cross axis; nothing additional is needed for `stacked`,
+ * whose icon-over-label layout only has a cross axis to center. `inline`'s icon sits beside the
+ * label instead, so it needs `justify-center` for the same centering on its main axis.
+ *
+ * `sm:w-auto` and the rest of each variant's `sm:` classes are not new sizing, they're turning the
+ * fixed width back off — landing on exactly the classes each variant had before, unchanged. Desktop
+ * was asked to stay as it is.
+ *
+ * Both widths are sized to the narrowest phone actually in the current iPhone lineup — the SE, at
+ * 375px — not the wider one (390px) it's easy to end up testing against instead. The gap between
+ * those two is bigger than it looks: `inline` sits inside the dock's own padding on top of the
+ * page's, so its track shrinks by 56px at 375px width against the hero's 40px, and a size that
+ * clears 390px with room to spare can still wrap at 375px. Checked at 375/390/393/402/428/430 — the
+ * SE/mini through the Pro Max — rather than just the one phone that happened to be at hand.
  */
 const VARIANTS = {
-  stacked: "glass min-w-[104px] flex-col gap-2 rounded-2xl px-5 py-3.5 hover:-translate-y-0.5",
+  stacked:
+    "glass min-w-0 w-[63px] flex-col gap-1 rounded-2xl px-1 py-2.5 hover:-translate-y-0.5 sm:w-auto sm:min-w-[104px] sm:gap-2 sm:px-5 sm:py-3.5",
   inline:
-    "gap-2 rounded-xl [corner-shape:squircle] px-3.5 py-2 hover:bg-white/45 active:scale-[0.97]",
+    "w-[60px] justify-center gap-2 rounded-xl [corner-shape:squircle] px-0.5 py-2 hover:bg-white/45 active:scale-[0.97] sm:w-auto sm:justify-start sm:px-3.5",
+} as const;
+
+/**
+ * The label is what identifies a pill, so on a phone the icon is what gives way — dropping it buys
+ * ~34px per pill, which is most of the ~160px the row has to lose, and it costs only decoration.
+ * Icon-only was the other way to fit five across, and it doesn't survive the question "which of
+ * these is Me?" — a smiley and a magnifying-glass-over-a-person are not a navigation.
+ *
+ * The hero's tiles keep theirs at every width: they're two lines tall by construction, so the icon
+ * is not what makes them too wide, and it's doing much more of the work up there.
+ */
+const ICON_VARIANTS = {
+  stacked: "size-5",
+  inline: "hidden size-5 sm:block",
 } as const;
 
 /**
@@ -157,6 +202,15 @@ export function PillRow({
    */
   activePanel,
   /**
+   * Whether the row is on screen, when the caller is collapsing it — `DockShell` on a phone. The
+   * clip is the caller's; this is just the pills' own part of the movement, so they travel *with*
+   * the closing edge instead of standing still while it passes over them.
+   *
+   * Defaults open, which is every other caller: the hero spreads this row out below its input and
+   * has nothing to collapse it into.
+   */
+  open = true,
+  /**
    * Rendered as the last item in the row. Inside the flex container rather than beside it so a
    * trailing control wraps with the pills instead of stranding itself on a line of its own.
    */
@@ -165,6 +219,7 @@ export function PillRow({
   variant?: keyof typeof VARIANTS;
   className?: string;
   activePanel?: string;
+  open?: boolean;
   trailing?: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -338,7 +393,32 @@ export function PillRow({
         // pills having slid off-centre rather than as a deliberate alignment.
         //
         // `relative` because it's the offset parent the lozenge below is measured against.
-        "relative flex flex-wrap justify-center gap-2 sm:gap-3",
+        //
+        // `gap-1` below `sm:` on both variants, not the `gap-2` an earlier pass here tried on the
+        // hero for more visual breathing room. That was tuned against one viewport (a 390px window)
+        // and broke on a narrower real one: the smallest iPhone still sold, the SE/mini at 375px, has
+        // 15px less track, and `gap-2`'s five 63px tiles need 347px against the 335px that leaves —
+        // it would wrap on exactly the device this was for. `gap-1` fits with margin all the way down
+        // to 375px; see the arithmetic on `stacked`'s width above.
+        "relative flex flex-wrap justify-center gap-1 sm:gap-3",
+        // The pills' half of the collapse. The clip alone would hold them still while its edge
+        // travelled over them, which reads as a shutter closing; moving them down into the field as
+        // it shuts is what makes it the pills that went somewhere.
+        //
+        // The fade is faster than the slide and front-loaded, so they're transparent well before the
+        // clip would show a row of half-guillotined labels. Both reset at `sm:` alongside the track.
+        //
+        // Scoped to `inline` rather than written unconditionally, because the hero's row must not
+        // carry a transform. Its pills are the only `.glass` on the site with something worth
+        // refracting behind them, and a transformed ancestor is the kind of thing that establishes a
+        // backdrop root and quietly cuts the fluid sim out of what they sample. The hero also has
+        // nothing to collapse into, so the classes would only ever be the resting half anyway.
+        variant === "inline" && [
+          "transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none",
+          open
+            ? "translate-y-0 opacity-100"
+            : "translate-y-1.5 opacity-0 duration-150 sm:translate-y-0 sm:opacity-100",
+        ],
         className,
       )}
     >
@@ -396,7 +476,11 @@ export function PillRow({
             data-glass={variant === "stacked" ? "" : undefined}
             suppressHydrationWarning
           >
-            <Icon className="size-5" style={{ color: pill.color }} strokeWidth={1.75} />
+            <Icon
+              className={ICON_VARIANTS[variant]}
+              style={{ color: pill.color }}
+              strokeWidth={1.75}
+            />
             {pill.label}
           </Link>
         );

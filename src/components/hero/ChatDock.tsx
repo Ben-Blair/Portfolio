@@ -119,7 +119,12 @@ export function ChatDock({ variant = "hero" }: { variant?: "hero" | "bar" }) {
         aria-label={`Ask ${profile.name} anything`}
         disabled={configured === null}
         className={cn(
-          "w-full flex-1 select-text rounded-full bg-transparent text-[15px] text-neutral-800 outline-none placeholder:text-neutral-600 disabled:cursor-wait",
+          "w-full flex-1 select-text rounded-full bg-transparent text-neutral-800 outline-none placeholder:text-neutral-600 disabled:cursor-wait",
+          // 16px below `sm:`, and only for that reason: iOS Safari zooms the entire page in when it
+          // focuses an input whose text is under 16px, so at 15px tapping this scaled the whole site
+          // up and left it there. Fixed here rather than with `maximum-scale` on the viewport, which
+          // would stop the zoom by taking pinch-zoom away from everyone.
+          "text-base sm:text-[15px]",
           // The bar sits under a page rather than in the middle of the hero, so it matches the
           // chat page's slightly shorter input.
           bar ? "py-3.5 pl-4 pr-14" : "py-4 pl-6 pr-14",
@@ -147,7 +152,11 @@ export function ChatDock({ variant = "hero" }: { variant?: "hero" | "bar" }) {
         <>
           {form}
 
-          <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+          {/* Desktop only. These are four long sentences in a wrapping row, which at 390px is four
+              stacked rows of chip — ~138px of the one screen that has nothing to spare, spent on
+              suggestions rather than on the hero. The same four questions are still one tap away on
+              `/chat`, where they're a plain list (see `ChatView`) and cost a line each. */}
+          <div className="mt-3 hidden flex-wrap justify-center gap-1.5 sm:flex">
             {profile.suggestedPrompts.map((prompt) => (
               <button
                 key={prompt}
