@@ -1,12 +1,12 @@
 ---
 title: Presence Scan
-tagline: A live mmWave radar turns a real person walking my garage into a glowing orb inside its 3D scan.
+tagline: A live mmWave radar turns a real person walking my garage into an avatar inside its 3D scan.
 date: 2026-07-31
 featured: true
 order: 0
 status: Deployed to GitHub Pages
 accent: "#0891b2"
-tags: [PlayCanvas, WebGL, mmWave Radar, ESP32, WebSocket, Gaussian Splatting]
+tags: [PlayCanvas, WebGL, mmWave Radar, Noise Filtering, ESP32, WebSocket, Gaussian Splatting]
 links:
   - { label: GitHub, href: "https://github.com/Ben-Blair/presence-scan" }
   - { label: Live Demo, href: "https://ben-blair.github.io/presence-scan/" }
@@ -36,14 +36,14 @@ one packet per person per tick, in millimetres:
 ```
 
 The viewer connects straight to that socket, maps sensor space onto splat space through an
-origin/rotation/scale calibration, and eases a glowing orb toward wherever you're actually
-standing in the room. Up to three people track as three independent orbs.
+origin/rotation/scale calibration, and eases an avatar toward wherever you're actually
+standing in the room. Up to three people track as three independent avatars.
 
 ## Wall cutaway
 
 Splats don't have geometry to hide behind, so a full walkthrough of a garage from outside would
 just show you the outside of the walls. A custom shader chunk fades walls between the camera and
-the orb whenever the camera leaves the room, so tracking a person from any angle still reads as
+the avatar whenever the camera leaves the room, so tracking a person from any angle still reads as
 looking *into* a space rather than at a box.
 
 ## Calibrating a real radar to a real room
