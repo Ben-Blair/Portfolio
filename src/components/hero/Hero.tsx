@@ -27,10 +27,13 @@ export function Hero() {
       <FluidCanvas />
       {process.env.NODE_ENV === "development" && <FluidTuner />}
 
-      {/* Wordmark, behind everything, clipped by the section. */}
+      {/* Wordmark, behind everything, clipped by the section. Hidden below `sm:` — at `18vw` on a
+          phone-width viewport it's mostly just a pale smudge behind the dock rather than the
+          bleeding-off-the-edge typographic gesture it is on a wide screen, and the screen it's on
+          is the one with no room to spend on decoration that isn't pulling its weight. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute -bottom-[4vw] left-1/2 -z-[5] w-full -translate-x-1/2 select-none text-center font-display text-[18vw] font-extrabold leading-none tracking-tighter text-neutral-900/[0.045]"
+        className="pointer-events-none absolute -bottom-[4vw] left-1/2 -z-[5] hidden w-full -translate-x-1/2 select-none text-center font-display text-[18vw] font-extrabold leading-none tracking-tighter text-neutral-900/[0.045] sm:block"
       >
         {profile.wordmark}
       </span>
@@ -66,7 +69,15 @@ export function Hero() {
           />
         </div>
 
-        <ChatDock />
+        {/* Nudged down on a phone held upright — `max-sm:portrait:` rather than the site's usual
+            bare `sm:`, since this one is genuinely about orientation and not just width. Landscape
+            never needs it: turning any real phone sideways alone clears the 640px breakpoint (an
+            iPhone SE, the narrowest current one, is already 667px on its short side), so `sm:` would
+            in practice already exclude it — this is here so that stays true by construction rather
+            than by coincidence of today's device sizes. */}
+        <div className="max-sm:portrait:mt-6">
+          <ChatDock />
+        </div>
       </div>
     </section>
   );

@@ -89,9 +89,15 @@ export function AboutBlock() {
             {profile.fullName}
           </p>
 
-          <p className="mt-1 text-[14.5px] text-neutral-500">
+          {/* The resume link belongs here as well as at the foot of the block (see the `PanelLink`
+              below the bio) — this is the one line on the page that states who you're looking at
+              in the fewest words, and someone who already knows enough from that shouldn't have to
+              read three paragraphs to find the resume. */}
+          <p className="mt-1 flex flex-wrap items-center text-[14.5px] text-neutral-500">
             {profile.age} years old <span className="px-1.5 text-neutral-300">•</span>{" "}
             {profile.location}
+            <span className="px-1.5 text-neutral-300">•</span>
+            <PanelLink href="/resume">Resume</PanelLink>
           </p>
 
           {/* Its own step, arriving on the seam where the name finished fading, and travelling the
