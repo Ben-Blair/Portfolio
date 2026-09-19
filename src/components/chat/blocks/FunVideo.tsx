@@ -1,19 +1,23 @@
 "use client";
 
-import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { cn } from "@/lib/utils";
 
 /**
- * The Fun panel's video. Self-hosted, autoplaying, muted, looped — and covered by its own poster
- * whenever the video isn't actually playing, not just before the first frame.
+ * The Fun panel's video. Self-hosted, autoplaying, muted, looped — and covered by its own first
+ * frame whenever it isn't actually painting one.
  *
- * A native `<video poster>` only covers the gap before playback starts; a stall mid-loop (a slow
- * connection re-buffering) falls back to whatever frame was last decoded, which can freeze on
- * something half-rendered. `waiting`/`playing` track that state directly and swap in the same
- * still every time, so a stall reads as "paused on frame one" rather than a glitch.
+ * A native `<video poster>` only covers the gap before the element starts playback. Autoplay
+ * throws that still away the moment `play()` is called, which is often several hundred milliseconds
+ * before a decoded frame reaches the screen — and that gap is a black rectangle. `next/image`
+ * made it worse: it fetches an optimized `/_next/image` URL, so the raw `poster.jpg` we warm on
+ * hover/click never helped the overlay. The still is the same URL the warmer already fetched,
+ * painted as the box's background (so it can show before React hydrates the `<img>`) and as an
+ * `<img>` on top until the first video frame is really there.
  *
- * The poster is a lossless still pulled from the encode's own first frame, not a separate export
- * from the source cut — that's what makes the swap invisible: the pixels match exactly.
+ * `requestVideoFrameCallback` is that "really there". `playing` fires too early; a stall mid-loop
+ * still flips the overlay back on via `waiting`.
  */
 export function FunVideo({
   src,
@@ -26,14 +30,54 @@ export function FunVideo({
   title: string;
   aspect: string;
 }) {
-  const [buffering, setBuffering] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [hasFrame, setHasFrame] = useState(false);
+  const [stalled, setStalled] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let cancelled = false;
+    const painted = () => {
+      if (!cancelled) setHasFrame(true);
+    };
+
+    if (typeof video.requestVideoFrameCallback === "function") {
+      const id = video.requestVideoFrameCallback(() => painted());
+      return () => {
+        cancelled = true;
+        video.cancelVideoFrameCallback(id);
+      };
+    }
+
+    const fallback = () => {
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) painted();
+    };
+    video.addEventListener("loadeddata", fallback);
+    video.addEventListener("playing", fallback);
+    fallback();
+    return () => {
+      cancelled = true;
+      video.removeEventListener("loadeddata", fallback);
+      video.removeEventListener("playing", fallback);
+    };
+  }, [src]);
+
+  const cover = !hasFrame || stalled;
 
   return (
     <div
-      style={{ aspectRatio: aspect }}
-      className="relative w-full overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-900"
+      style={{
+        aspectRatio: aspect,
+        backgroundImage: `url(${poster})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+      className="relative w-full overflow-hidden rounded-2xl border border-neutral-200"
     >
       <video
+        ref={videoRef}
         src={src}
         poster={poster}
         title={title}
@@ -42,20 +86,19 @@ export function FunVideo({
         muted
         playsInline
         preload="auto"
-        onWaiting={() => setBuffering(true)}
-        onPlaying={() => setBuffering(false)}
+        onWaiting={() => setStalled(true)}
+        onPlaying={() => setStalled(false)}
         className="absolute inset-0 size-full object-cover"
       />
-      <Image
+      <img
         src={poster}
         alt=""
         aria-hidden
-        fill
-        preload
-        sizes="(max-width: 768px) 100vw, 640px"
-        className={`pointer-events-none absolute inset-0 object-cover transition-opacity duration-200 ${
-          buffering ? "opacity-100" : "opacity-0"
-        }`}
+        fetchPriority="high"
+        className={cn(
+          "pointer-events-none absolute inset-0 size-full object-cover transition-opacity duration-200",
+          cover ? "opacity-100" : "opacity-0",
+        )}
       />
     </div>
   );
