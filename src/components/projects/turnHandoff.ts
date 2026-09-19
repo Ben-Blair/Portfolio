@@ -169,11 +169,21 @@ export function beginThink(): number {
 }
 
 /**
- * Same clock, new owner — Skills was thinking, then Projects was clicked. The leftover
- * continues; the page that was answering Skills may not end it.
+ * Same clock, new owner — first arm from a page that wasn't already thinking.
+ * Leftover stays so the destination can subtract overlay time.
  */
 function retargetThink(): number {
   thinkStartedAt ??= performance.now();
+  thinkGen += 1;
+  return thinkGen;
+}
+
+/**
+ * New destination, new wait. The dots keep bouncing (their clock is separate); the
+ * leftover does not, or Fun → Me would skip the beat and land on the answer.
+ */
+function restartThink(): number {
+  thinkStartedAt = performance.now();
   thinkGen += 1;
   return thinkGen;
 }
@@ -199,28 +209,28 @@ export function clearThink() {
  *
  * When the visitor is already on `/chat` and staying there, the overlay stays down — switching
  * Me to Fun is `ChatView`'s own thinking beat, and an overlay on top of a page that's already
- * showing the turn would be the bubble arriving twice. The think clock still starts (or
- * continues), so a production remount of that tree can pick up mid-beat instead of restarting.
+ * showing the turn would be the bubble arriving twice. The wait restarts so the new panel
+ * still gets its beat; the dots do not, which is a different clock.
  *
- * Replacing an already-open overlay keeps `openedAt` and the dots that are on screen: only the
- * question changes. That's the Skills → Projects hop, where a fresh overlay used to remount
- * the bubble and look like the animation reset.
+ * Replacing an already-open overlay keeps the dots that are on screen and only changes the
+ * question. The wait starts over: leftover from Skills must not let Projects skip the beat.
  */
 export function armTurn(href: string) {
   const parsed = parseTurnHref(href);
   if (!parsed) return;
 
   if (parsed.path === "/chat" && window.location.pathname === "/chat") {
-    beginThink();
+    if (thinkStartedAt != null) restartThink();
+    else beginThink();
     return;
   }
 
   const now = performance.now();
-  retargetThink();
-
   if (live && live.openedAt !== null) {
+    restartThink();
     live = { ...parsed, armedAt: live.armedAt, openedAt: live.openedAt };
   } else {
+    retargetThink();
     live = { ...parsed, armedAt: now, openedAt: now };
   }
   expireAfter(OPEN_TTL_MS);

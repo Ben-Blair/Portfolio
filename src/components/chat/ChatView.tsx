@@ -90,9 +90,9 @@ export function ChatView() {
 
   // The written answer's equivalent of waiting on a first token, then clearing the screen for it.
   // Which panel reached each milestone, rather than flags plus a reset: a new panel is simply
-  // one neither of these names yet. Switching pills *during* the think keeps the same beat —
-  // the question updates, the dots do not restart. A pill clicked after this one has started
-  // answering is a new turn and takes both beats again.
+  // one neither of these names yet. Switching pills *during* the think keeps the dots bouncing
+  // and starts the wait over — otherwise leftover from Fun would skip Me straight to the answer.
+  // A pill clicked after this one has started answering is a new turn and takes both beats again.
   const reduced = useReducedMotion();
   const [left, setLeft] = useState("");
   const [answered, setAnswered] = useState("");
@@ -115,8 +115,6 @@ export function ChatView() {
     return turnElapsed();
   });
   const arrivalPanel = useRef(panelKey);
-  const thinkTarget = useRef(panelKey);
-  thinkTarget.current = panelKey;
 
   useEffect(() => {
     if (continued === null) return;
@@ -139,9 +137,12 @@ export function ChatView() {
 
   useEffect(() => {
     if (!needsThink) return;
+    // Leftover is only the overlay that opened *this* panel. A hop from Fun mid-think is
+    // a new wait — `panelKey` is in the deps so the timer restarts, and leftover stays 0.
     const leftover =
-      thinkTarget.current === arrivalPanel.current && continued !== null ? continued : 0;
+      panelKey === arrivalPanel.current && continued !== null ? continued : 0;
     const thinkingMs = reduced ? 0 : Math.max(0, PANEL_THINKING_MS - leftover);
+    const waitForFrame = panelKey === "fun";
 
     let cancelled = false;
     let floorElapsed = false;
@@ -149,10 +150,8 @@ export function ChatView() {
     const tryLeave = () => {
       if (cancelled) return;
       if (!floorElapsed) return;
-      // Fun can be the target now even if the think started on another pill — wait for
-      // its frame the same way a think that began on Fun does.
-      if (thinkTarget.current === "fun" && !funFrameReady()) return;
-      setLeft(thinkTarget.current);
+      if (waitForFrame && !funFrameReady()) return;
+      setLeft(panelKey);
     };
 
     const timer = setTimeout(() => {
@@ -160,23 +159,22 @@ export function ChatView() {
       tryLeave();
     }, thinkingMs);
 
-    // Subscribe for the whole think, not only when Fun is current: a Skills → Fun hop
-    // mid-beat still has to hear the frame arrive.
-    const unsub = subscribeFunFrame(tryLeave);
-    const cap = setTimeout(() => {
-      if (cancelled) return;
-      floorElapsed = true;
-      setLeft(thinkTarget.current);
-    }, Math.max(thinkingMs, FUN_FRAME_CAP_MS));
+    const unsub = waitForFrame ? subscribeFunFrame(tryLeave) : undefined;
+    const cap = waitForFrame
+      ? setTimeout(() => {
+          if (cancelled) return;
+          floorElapsed = true;
+          setLeft(panelKey);
+        }, Math.max(thinkingMs, FUN_FRAME_CAP_MS))
+      : undefined;
 
     return () => {
       cancelled = true;
       clearTimeout(timer);
-      clearTimeout(cap);
-      unsub();
+      if (cap) clearTimeout(cap);
+      unsub?.();
     };
-    // `needsThink`, not `panelKey`: a pill switch mid-think must not restart this timer.
-  }, [needsThink, reduced, continued]);
+  }, [needsThink, panelKey, reduced, continued]);
 
   useEffect(() => {
     if (!exiting) return;
