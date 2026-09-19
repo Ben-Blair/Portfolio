@@ -8,7 +8,6 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   Answer,
-  TypingDots,
   withoutMediaTokens,
   withoutPartialBold,
   withoutPartialMedia,
@@ -21,9 +20,11 @@ import { PANELS } from "@/components/chat/blocks/panels";
 import { chatHref, panelHref } from "@/components/chat/href";
 import { PanelAnswer } from "@/components/chat/reveal";
 import { PANEL_EXIT_MS, PANEL_THINKING_MS } from "@/components/chat/timing";
+import { TypingDots } from "@/components/chat/TypingDots";
 import { useReducedMotion } from "@/components/chat/useReducedMotion";
 import { useTypewriter } from "@/components/chat/useTypewriter";
 import { warmPanel } from "@/components/chat/warm";
+import { armTurn, endTurn, turnElapsed } from "@/components/projects/turnHandoff";
 import { cn } from "@/lib/utils";
 import { profile } from "@content/profile";
 
@@ -84,11 +85,33 @@ export function ChatView() {
   const exiting = Boolean(panelKey) && left === panelKey;
   const answering = Boolean(panelKey) && answered === panelKey;
 
+  /**
+   * How long the turn has already been on screen in the overlay, or null if it never was — a
+   * hard load of `/chat?panel=…`, or a panel switch that happened in place.
+   *
+   * Read once, at mount: this is the state of the world at the handoff. The leftover is only
+   * for the panel that was arriving when this tree appeared; later pill clicks play the full
+   * beat. Cleared from an effect rather than from this initializer, which React double-invokes
+   * in development.
+   */
+  const [continued] = useState(turnElapsed);
+  const arrivalPanel = useRef(panelKey);
+  useEffect(() => {
+    if (continued === null) return;
+    // After this paint, so the bubble is in the tree before the overlay that was covering
+    // the wait comes off. A rAF rather than a timeout: we only need the destination frame,
+    // not an extra beat.
+    const frame = requestAnimationFrame(() => endTurn());
+    return () => cancelAnimationFrame(frame);
+  }, [continued]);
+
   useEffect(() => {
     if (!panelKey) return;
-    const timer = setTimeout(() => setLeft(panelKey), reduced ? 0 : PANEL_THINKING_MS);
+    const leftover = panelKey === arrivalPanel.current && continued !== null ? continued : 0;
+    const thinkingMs = Math.max(0, PANEL_THINKING_MS - leftover);
+    const timer = setTimeout(() => setLeft(panelKey), reduced ? 0 : thinkingMs);
     return () => clearTimeout(timer);
-  }, [panelKey, reduced]);
+  }, [panelKey, reduced, continued]);
 
   useEffect(() => {
     if (!exiting) return;
@@ -128,7 +151,11 @@ export function ChatView() {
     if (!trimmed) return;
     if (busy) stop();
     setInput("");
-    router.push(chatHref(trimmed));
+    const href = chatHref(trimmed);
+    // Opens the turn now if this one routes to Projects, whose page is fetched on demand — see
+    // `src/components/projects/turnHandoff.ts`. No-op for every other destination.
+    armTurn(href);
+    router.push(href);
   }
 
   // Pinned to the question the URL is actually asking. The two go out of step for a render or
@@ -213,7 +240,9 @@ export function ChatView() {
         // The model call this page made on arrival is now waste — the answer is a written panel or
         // another page. Stopping it keeps a redirect from costing a full generation nobody reads.
         stop();
-        router.replace(panelHref(panel, query));
+        const href = panelHref(panel, query);
+        armTurn(href);
+        router.replace(href);
       })
       // Aborts land here too. There is nothing to do about any of it: no route means the answer
       // already on its way is the answer.
@@ -249,6 +278,7 @@ export function ChatView() {
                 question={query || panel.question}
                 hidden={exiting || answering}
                 lift
+                entrance={continued === null}
               />
 
               {answering ? (
@@ -286,7 +316,7 @@ export function ChatView() {
               <div>
                 {query && (
                   <div aria-hidden="true">
-                    <QuestionBubble question={query} hidden={started} />
+                    <QuestionBubble question={query} hidden={started} entrance={continued === null} />
                   </div>
                 )}
 

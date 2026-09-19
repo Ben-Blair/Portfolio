@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { TypingDots } from "@/components/chat/Answer";
 import { QuestionBubble } from "@/components/chat/QuestionBubble";
 import { PANEL_EXIT_MS, PANEL_THINKING_MS } from "@/components/chat/timing";
+import { TypingDots } from "@/components/chat/TypingDots";
 import { useReducedMotion } from "@/components/chat/useReducedMotion";
+import { endTurn, PROJECTS_QUESTION, turnElapsed } from "@/components/projects/turnHandoff";
 
 /**
  * The Projects turn, played at the top of the page it's about.
@@ -18,11 +19,13 @@ import { useReducedMotion } from "@/components/chat/useReducedMotion";
  * Rendered only for `?ask=1`, which the Projects pill links to. A bare `/projects`, a rail anchor,
  * a refresh or a back-navigation all get the plain page — and once this has played it rewrites the
  * URL to drop the parameter, so watching it once doesn't mean watching it again on reload.
+ *
+ * Usually this is the *second* component to draw the turn, not the first. `TurnOverlay` opens it
+ * on the page you clicked from — see `src/components/chat/TurnOverlay.tsx` — so by the time this
+ * mounts the question and the dots are already up, and the beats below pick up mid-turn rather
+ * than starting one. `loading.tsx` is a second copy for the case the overlay never ran (a hard
+ * load). `turnHandoff` is how they find that out about each other.
  */
-
-/** The pill's label, expanded into something a person would actually type. Was in `panels.tsx`. */
-const QUESTION = "What have you built?";
-
 export function ProjectsIntro({
   /**
    * What was actually typed, when a free-text question was routed here instead of a pill being
@@ -40,11 +43,37 @@ export function ProjectsIntro({
 }) {
   const reduced = useReducedMotion();
 
+  /**
+   * How long the turn has already been on screen in the overlay (or the loading shell), or null
+   * if it never was — a hard load, a `?ask=1` URL typed in directly, or a navigation that never
+   * armed.
+   *
+   * Read once, at mount: this is the state of the world at the handoff, and re-reading it on a
+   * later render would give a number that keeps growing. Cleared from an effect rather than from
+   * this initializer, which React double-invokes in development.
+   */
+  const [continued] = useState(turnElapsed);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => endTurn());
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   // The same two beats `ChatView` gives a written panel, for the same reasons — see
   // `src/components/chat/timing.ts`. Copied rather than shared: it's a dozen lines, and a hook
   // over two call sites would be a hook that has to keep both honest forever.
   const [exiting, setExiting] = useState(false);
   const [done, setDone] = useState(false);
+
+  /**
+   * The thinking beat, less whatever the loading shell already spent of it.
+   *
+   * The dots have been bouncing since the click, and the wait they were covering *was* the fetch.
+   * Serving the full 420ms again on top would charge a slow connection for the beat twice, which
+   * is the opposite of what opening early was for. So the turn takes `max(420ms, however long the
+   * page took)` before it starts leaving: never shorter than it reads on a fast connection, never
+   * padded on a slow one.
+   */
+  const thinkingMs = Math.max(0, PANEL_THINKING_MS - (continued ?? 0));
 
   // The visitor scrolled. They've decided; an animation whose entire message is "scroll" has
   // nothing left to say to someone already doing it, so everything lands on its last frame at
@@ -52,9 +81,9 @@ export function ProjectsIntro({
   const [skipped, setSkipped] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setExiting(true), reduced ? 0 : PANEL_THINKING_MS);
+    const timer = setTimeout(() => setExiting(true), reduced ? 0 : thinkingMs);
     return () => clearTimeout(timer);
-  }, [reduced]);
+  }, [reduced, thinkingMs]);
 
   useEffect(() => {
     if (!exiting) return;
@@ -139,7 +168,14 @@ export function ProjectsIntro({
         <div className="min-h-0 overflow-hidden">
           {/* The chat's measure, so the bubble and the dots sit exactly where they would on /chat. */}
           <div className="mx-auto w-full max-w-2xl pt-28 pb-8 sm:pt-32">
-            <QuestionBubble question={question || QUESTION} hidden={exiting} lift />
+            {/* No entrance when the shell already played it — see `QuestionBubble`'s `entrance`.
+                This is the same bubble continuing, not a second one arriving. */}
+            <QuestionBubble
+              question={question || PROJECTS_QUESTION}
+              hidden={exiting}
+              lift
+              entrance={continued === null}
+            />
 
             {/* The same `1fr → 0fr` close the question is doing above it, so both are out of the
                 layout by the frame they're done. `min-h-0` rather than `overflow-hidden`: the dots

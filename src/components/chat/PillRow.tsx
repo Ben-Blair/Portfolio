@@ -14,6 +14,7 @@ import { useEffect, useRef } from "react";
 
 import { useReducedMotion } from "@/components/chat/useReducedMotion";
 import { warmMediaUrl, warmPanel } from "@/components/chat/warm";
+import { armTurn } from "@/components/projects/turnHandoff";
 import { useProjectPreloadUrl } from "@/components/site/ProjectPreloadContext";
 import { cn } from "@/lib/utils";
 import { profile } from "@content/profile";
@@ -440,6 +441,10 @@ export function PillRow({
         const Icon = PILL_ICONS[pill.icon] ?? Smile;
         const current = pill === currentPill;
 
+        // `in` rather than a truthiness check: `profile.pills` is `as const`, so a pill without a
+        // `panel` is a different type rather than one with an empty field.
+        const href = "panel" in pill ? `/chat?panel=${pill.panel}` : pill.href;
+
         // Hover and focus are the same signal — the earliest one there is short of the click —
         // so both events get this. What "ready" means is the warm module's problem, not the
         // row's: a panel pill warms whatever its panel needs, and Projects warms the video its
@@ -458,10 +463,18 @@ export function PillRow({
               if (node) pillRefs.current.set(pill.label, node);
               else pillRefs.current.delete(pill.label);
             }}
-            // `in` rather than a truthiness check: `profile.pills` is `as const`, so a pill
-            // without a `panel` is a different type rather than one with an empty field.
-            href={"panel" in pill ? `/chat?panel=${pill.panel}` : pill.href}
-            onClick={rememberCurrentPosition}
+            href={href}
+            onClick={() => {
+              rememberCurrentPosition();
+              // Start the turn here, on the page that already has JS, rather than waiting for a
+              // destination that a first visit still has to fetch. A no-op when the href isn't a
+              // turn, or when `/chat` is switching panels in place. See
+              // `src/components/projects/turnHandoff.ts`.
+              armTurn(href);
+              // Touch never hovers, so the click is the first chance to warm Fun's video (and
+              // anything else a panel asked for). Safe to call twice — `warm.ts` dedupes.
+              warm?.();
+            }}
             onMouseEnter={warm}
             onFocus={warm}
             aria-current={current ? "page" : undefined}

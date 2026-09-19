@@ -20,7 +20,7 @@ const INTRO_LIFT_MS = 760;
 
 /**
  * The chips, timed against the hello rather than chosen: they come up while it's still fading and
- * finish on the frame it stops moving, so the column arrives complete in one instant instead of
+ * finish on the frame it stops moving, so the header arrives complete in one instant instead of
  * trailing a last small thing behind it.
  *
  * Both numbers fall out of the lead. Start them earlier and they fade for longer — the landing is
@@ -46,8 +46,9 @@ const CHIPS_FADE_MS = INTRO_LIFT_MS - CHIPS_START_MS;
  * column reads as one thing still rising rather than as two things sliding in turn.
  *
  * The chips close it out on the other end: they start while the hello is still fading and are
- * timed to finish on the frame it stops moving, so the whole column lands at once instead of
- * leaving one last row to catch up.
+ * timed to finish on the frame it stops moving, so the whole header lands at once instead of
+ * leaving one last row to catch up. They sit under the photo and the intro as one centered row,
+ * not trapped in the text column.
  *
  * The flex row itself isn't a step. It has to exist from the start so the right column can fill
  * in beside the photo instead of below it. Spacing rides on each step's own `className`, so a
@@ -56,84 +57,87 @@ const CHIPS_FADE_MS = INTRO_LIFT_MS - CHIPS_START_MS;
 export function AboutBlock() {
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-5 sm:flex-row sm:items-start">
-        <Fade
-          step={0}
-          fadeMs={NAME_FADE_MS}
-          liftMs={NAME_LIFT_MS}
-          delayMs={PHOTO_DELAY_MS}
-          className="shrink-0"
-        >
-          <div className="relative w-56 overflow-hidden rounded-2xl aspect-[716/1002]">
-            <Image
-              src="/me-photo.webp"
-              alt={profile.fullName}
-              fill
-              sizes="224px"
-              className="object-contain"
-            />
-          </div>
-        </Fade>
-
-        {/* Same step as the photo — one number, two things, arriving in one movement. This one
-            sets the pace: `hold` releases the next step on the end of its fade, while it's still
-            travelling. */}
-        <Fade
-          step={0}
-          fadeMs={NAME_FADE_MS}
-          liftMs={NAME_LIFT_MS}
-          hold={NAME_FADE_MS}
-          className="min-w-0 pt-1"
-        >
-          <p className="font-display text-2xl font-bold tracking-tight text-neutral-900">
-            {profile.fullName}
-          </p>
-
-          {/* The resume link belongs here as well as at the foot of the block (see the `PanelLink`
-              below the bio) — this is the one line on the page that states who you're looking at
-              in the fewest words, and someone who already knows enough from that shouldn't have to
-              read three paragraphs to find the resume. */}
-          <p className="mt-1 flex flex-wrap items-center text-[14.5px] text-neutral-500">
-            {profile.age} years old <span className="px-1.5 text-neutral-300">•</span>{" "}
-            {profile.location}
-            <span className="px-1.5 text-neutral-300">•</span>
-            <PanelLink href="/resume">Resume</PanelLink>
-          </p>
-
-          {/* Its own step, arriving on the seam where the name finished fading, and travelling the
-              same way it does — the column keeps moving as it fills in rather than the movement
-              belonging to the header alone. It releases the chips a beat before its own fade is
-              done, so the two overlap rather than queue. */}
+      <div className="mb-6">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <Fade
-            step={1}
-            fadeMs={INTRO_FADE_MS}
-            liftMs={INTRO_LIFT_MS}
-            hold={CHIPS_START_MS}
-            className="mt-4 space-y-2"
+            step={0}
+            fadeMs={NAME_FADE_MS}
+            liftMs={NAME_LIFT_MS}
+            delayMs={PHOTO_DELAY_MS}
+            className="shrink-0"
           >
-            {profile.intro.map((line) => (
-              <p key={line} className="text-[15px] leading-relaxed text-neutral-700">
-                {line}
-              </p>
-            ))}
+            <div className="relative w-56 overflow-hidden rounded-2xl aspect-[716/1002]">
+              <Image
+                src="/me-photo.webp"
+                alt={profile.fullName}
+                fill
+                sizes="224px"
+                className="object-contain"
+              />
+            </div>
           </Fade>
 
-          {/* The chips repeat what the prose already says, on purpose: they're what someone
-              skimming takes away when they don't read the paragraphs. They only fade — the hello
-              above them is still travelling, and a second thing moving under it would read as the
-              column not knowing where it's meant to settle. */}
-          <Fade step={2} fadeMs={CHIPS_FADE_MS} className="mt-5">
-            <ul className="flex flex-wrap gap-2">
-              {profile.tags.map((tag) => (
-                <li
-                  key={tag}
-                  className="rounded-full bg-neutral-100 px-3 py-1.5 text-[13px] text-neutral-600"
-                >
-                  {tag}
-                </li>
+          {/* Same step as the photo — one number, two things, arriving in one movement. This one
+              sets the pace: `hold` releases the next step on the end of its fade, while it's still
+              travelling. */}
+          <Fade
+            step={0}
+            fadeMs={NAME_FADE_MS}
+            liftMs={NAME_LIFT_MS}
+            hold={NAME_FADE_MS}
+            className="min-w-0 pt-1"
+          >
+            <p className="font-display text-2xl font-bold tracking-tight text-neutral-900">
+              {profile.fullName}
+            </p>
+
+            {/* The resume link belongs here as well as at the foot of the block (see the `PanelLink`
+                below the bio) — this is the one line on the page that states who you're looking at
+                in the fewest words, and someone who already knows enough from that shouldn't have to
+                read three paragraphs to find the resume. */}
+            <p className="mt-1 flex flex-wrap items-center text-[14.5px] text-neutral-500">
+              {profile.age} years old <span className="px-1.5 text-neutral-300">•</span>{" "}
+              {profile.location}
+              <span className="px-1.5 text-neutral-300">•</span>
+              <PanelLink href="/resume">Resume</PanelLink>
+            </p>
+
+            {/* Its own step, arriving on the seam where the name finished fading, and travelling the
+                same way it does — the column keeps moving as it fills in rather than the movement
+                belonging to the header alone. It releases the chips a beat before its own fade is
+                done, so the two overlap rather than queue. */}
+            <Fade
+              step={1}
+              fadeMs={INTRO_FADE_MS}
+              liftMs={INTRO_LIFT_MS}
+              hold={CHIPS_START_MS}
+              className="mt-4 space-y-2"
+            >
+              {profile.intro.map((line) => (
+                <p key={line} className="text-[15px] leading-relaxed text-neutral-700">
+                  {line}
+                </p>
               ))}
-            </ul>
+            </Fade>
           </Fade>
+        </div>
+
+        {/* The chips repeat what the prose already says, on purpose: they're what someone
+            skimming takes away when they don't read the paragraphs. They only fade — the hello
+            above them is still travelling, and a second thing moving under it would read as the
+            header not knowing where it's meant to settle. Full width under the photo so they
+            sit as one centered row instead of wrapping in the text column. */}
+        <Fade step={2} fadeMs={CHIPS_FADE_MS} className="mt-5">
+          <ul className="flex flex-wrap justify-center gap-2 sm:flex-nowrap">
+            {profile.tags.map((tag) => (
+              <li
+                key={tag}
+                className="rounded-full bg-neutral-100 px-3 py-1.5 text-[13px] text-neutral-600"
+              >
+                {tag}
+              </li>
+            ))}
+          </ul>
         </Fade>
       </div>
 

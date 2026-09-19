@@ -22,10 +22,21 @@ export function QuestionBubble({
   question,
   hidden,
   lift = false,
+  /**
+   * Whether the bubble plays its arrival. On by default, which is every case where this mounts at
+   * the moment the question is asked — the pop *is* the send.
+   *
+   * Off when the bubble is already on screen and this is simply the second component to draw it.
+   * `/projects` opens its turn in a `loading.tsx` shell and finishes it on the page itself (see
+   * `ProjectsTurnFrame`), so one bubble spans two mounts; replaying the entrance across that seam
+   * reads as the question being asked twice.
+   */
+  entrance = true,
 }: {
   question: string;
   hidden: boolean;
   lift?: boolean;
+  entrance?: boolean;
 }) {
   return (
     <div
@@ -61,7 +72,13 @@ export function QuestionBubble({
               ),
           )}
         >
-          <p className="max-w-[80%] animate-in rounded-3xl rounded-br-lg bg-[#0b84ff] px-4 py-2.5 text-[15px] leading-[1.45] break-words whitespace-pre-wrap text-white duration-300 ease-out fade-in-0 zoom-in-95 slide-in-from-bottom-2 motion-reduce:animate-none">
+          <p
+            className={cn(
+              "max-w-[80%] rounded-3xl rounded-br-lg bg-[#0b84ff] px-4 py-2.5 text-[15px] leading-[1.45] break-words whitespace-pre-wrap text-white",
+              entrance &&
+                "animate-in duration-300 ease-out fade-in-0 zoom-in-95 slide-in-from-bottom-2 motion-reduce:animate-none",
+            )}
+          >
             {question}
           </p>
         </div>

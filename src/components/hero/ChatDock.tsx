@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { DockShell } from "@/components/chat/DockShell";
 import { chatHref } from "@/components/chat/href";
 import { PillRow } from "@/components/chat/PillRow";
+import { armTurn } from "@/components/projects/turnHandoff";
 import { cn } from "@/lib/utils";
 import { profile } from "@content/profile";
 
@@ -50,7 +51,11 @@ export function ChatDock({ variant = "hero" }: { variant?: "hero" | "bar" }) {
   function submit(text: string) {
     const trimmed = text.trim();
     if (!trimmed || configured === false) return;
-    router.push(chatHref(trimmed));
+    const href = chatHref(trimmed);
+    // Opens the turn now, on this page, so a first visit doesn't wait on `/chat` (or `/projects`)
+    // to download before the bubble can appear. No-op when the question stays on `/chat`.
+    armTurn(href);
+    router.push(href);
   }
 
   const bar = variant === "bar";

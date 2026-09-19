@@ -1,3 +1,5 @@
+import { PANEL_QUESTIONS } from "@/components/chat/questions";
+
 import { AboutBlock } from "./AboutBlock";
 import { ContactBlock } from "./ContactBlock";
 import { FunBlock } from "./FunBlock";
@@ -25,9 +27,9 @@ import { SkillsBlock } from "./SkillsBlock";
 type PanelEntry = { question: string; Block: () => React.ReactNode };
 
 export const PANELS: Record<string, PanelEntry> = {
-  me: { question: "Who are you? I want to know more about you.", Block: AboutBlock },
-  skills: { question: "What are you good at?", Block: SkillsBlock },
-  fun: { question: "What do you do for fun?", Block: FunBlock },
-  contact: { question: "How do I get in touch?", Block: ContactBlock },
-  resume: { question: "Can I see your resume?", Block: ResumeBlock },
+  me: { question: PANEL_QUESTIONS.me, Block: AboutBlock },
+  skills: { question: PANEL_QUESTIONS.skills, Block: SkillsBlock },
+  fun: { question: PANEL_QUESTIONS.fun, Block: FunBlock },
+  contact: { question: PANEL_QUESTIONS.contact, Block: ContactBlock },
+  resume: { question: PANEL_QUESTIONS.resume, Block: ResumeBlock },
 };

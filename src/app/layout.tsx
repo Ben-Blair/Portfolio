@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
+import { TurnOverlay } from "@/components/chat/TurnOverlay";
 import { GlassLayer } from "@/components/site/GlassLayer";
 import { PageBackdrop } from "@/components/site/PageBackdrop";
 import { ProjectPreloadProvider } from "@/components/site/ProjectPreloadContext";
@@ -70,6 +71,7 @@ export default function RootLayout({
             its input and every other page carries in the dock — see `app/(docked)/layout.tsx`. */}
         <ProjectPreloadProvider url={preload?.url}>
           <main className="flex-1">{children}</main>
+          <TurnOverlay />
         </ProjectPreloadProvider>
         {/* Builds the refraction filters behind every `.glass` surface. Renders nothing visible. */}
         <GlassLayer />
