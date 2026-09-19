@@ -6,6 +6,7 @@ import { QuestionBubble } from "@/components/chat/QuestionBubble";
 import { TypingDots } from "@/components/chat/TypingDots";
 import { PAGE_BACKDROP_IMAGE } from "@/components/site/backdrop";
 import {
+  clearThink,
   endTurn,
   getServerTurnSnapshot,
   openTurn,
@@ -36,7 +37,10 @@ export function TurnOverlay() {
   // Back/forward cancels a pending turn: the destination never claims it, and without this the
   // overlay would sit on the page you returned to until the safety TTL ran out.
   useEffect(() => {
-    const onPop = () => endTurn();
+    const onPop = () => {
+      endTurn();
+      clearThink();
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);

@@ -6,7 +6,13 @@ import { QuestionBubble } from "@/components/chat/QuestionBubble";
 import { PANEL_EXIT_MS, PANEL_THINKING_MS } from "@/components/chat/timing";
 import { TypingDots } from "@/components/chat/TypingDots";
 import { useReducedMotion } from "@/components/chat/useReducedMotion";
-import { endTurn, PROJECTS_QUESTION, turnElapsed } from "@/components/projects/turnHandoff";
+import {
+  beginThink,
+  endThink,
+  endTurn,
+  PROJECTS_QUESTION,
+  turnElapsed,
+} from "@/components/projects/turnHandoff";
 
 /**
  * The Projects turn, played at the top of the page it's about.
@@ -52,9 +58,13 @@ export function ProjectsIntro({
    * later render would give a number that keeps growing. Cleared from an effect rather than from
    * this initializer, which React double-invokes in development.
    */
-  const [continued] = useState(turnElapsed);
+  const thinkGen = useRef(0);
+  const [continued] = useState(() => {
+    thinkGen.current = beginThink();
+    return turnElapsed();
+  });
   useEffect(() => {
-    const frame = requestAnimationFrame(() => endTurn());
+    const frame = requestAnimationFrame(() => endTurn({ path: "/projects" }));
     return () => cancelAnimationFrame(frame);
   }, []);
 
@@ -147,6 +157,7 @@ export function ProjectsIntro({
   useEffect(() => {
     if (!done || settled.current) return;
     settled.current = true;
+    endThink(thinkGen.current);
     onSettled();
   }, [done, onSettled]);
 

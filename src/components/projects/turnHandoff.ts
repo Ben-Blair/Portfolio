@@ -65,6 +65,18 @@ let live: LiveTurn | null = null;
 let ttlTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
+ * The thinking beat in progress, kept outside any one page.
+ *
+ * Overlay, loading shell, and destination each mount their own dots, and a fast pill-to-pill
+ * click unmounts one while the next is still fetching. The leftover those pages subtract from
+ * `PANEL_THINKING_MS` has to survive that, or production — where the swap is slow enough to
+ * see — restarts the wait (and the animation) on every tab. Generation so a destination that
+ * lost the race can't end the beat the next pill just claimed.
+ */
+let thinkStartedAt: number | null = null;
+let thinkGen = 0;
+
+/**
  * Stable snapshot for `useSyncExternalStore`. A new object on every read would fail `Object.is`
  * and loop the overlay's render.
  */
@@ -145,27 +157,72 @@ function parseTurnHref(href: string): TurnSnapshot | null {
 }
 
 /**
+ * Start or continue the shared thinking beat. Returns the generation a caller must hand back
+ * to `endThink` so a stale page can't clear a beat that has since been claimed by another pill.
+ */
+export function beginThink(): number {
+  if (thinkStartedAt == null) {
+    thinkStartedAt = performance.now();
+    thinkGen += 1;
+  }
+  return thinkGen;
+}
+
+/**
+ * Same clock, new owner — Skills was thinking, then Projects was clicked. The leftover
+ * continues; the page that was answering Skills may not end it.
+ */
+function retargetThink(): number {
+  thinkStartedAt ??= performance.now();
+  thinkGen += 1;
+  return thinkGen;
+}
+
+/** Clear the beat only if `gen` is still the current one. */
+export function endThink(gen: number) {
+  if (gen !== thinkGen) return;
+  thinkStartedAt = null;
+}
+
+/** Back/forward: nothing on screen owns this beat anymore. */
+export function clearThink() {
+  thinkStartedAt = null;
+  thinkGen += 1;
+}
+
+/**
  * Arm the turn, if `href` is one that plays it.
  *
  * Takes the URL rather than a boolean so a caller can pass whatever it was about to navigate to
  * and be done with it: `chatHref` resolves to any of five destinations and only one of them used
  * to be this one. Asking each call site to work out which is asking it to drift.
  *
- * No-op when the visitor is already on `/chat` and staying there — switching Me to Fun is
- * `ChatView`'s own thinking beat, and an overlay on top of a page that's already showing the
- * turn would be the bubble arriving twice.
+ * When the visitor is already on `/chat` and staying there, the overlay stays down — switching
+ * Me to Fun is `ChatView`'s own thinking beat, and an overlay on top of a page that's already
+ * showing the turn would be the bubble arriving twice. The think clock still starts (or
+ * continues), so a production remount of that tree can pick up mid-beat instead of restarting.
+ *
+ * Replacing an already-open overlay keeps `openedAt` and the dots that are on screen: only the
+ * question changes. That's the Skills → Projects hop, where a fresh overlay used to remount
+ * the bubble and look like the animation reset.
  */
 export function armTurn(href: string) {
   const parsed = parseTurnHref(href);
   if (!parsed) return;
 
-  if (parsed.path === "/chat" && window.location.pathname === "/chat") return;
+  if (parsed.path === "/chat" && window.location.pathname === "/chat") {
+    beginThink();
+    return;
+  }
 
-  // Opened in the same tick as the click: the overlay paints synchronously via
-  // `useSyncExternalStore`, so the clock should start now rather than in an effect that may
-  // lose a race to a cached destination page.
   const now = performance.now();
-  live = { ...parsed, armedAt: now, openedAt: now };
+  retargetThink();
+
+  if (live && live.openedAt !== null) {
+    live = { ...parsed, armedAt: live.armedAt, openedAt: live.openedAt };
+  } else {
+    live = { ...parsed, armedAt: now, openedAt: now };
+  }
   expireAfter(OPEN_TTL_MS);
   publish();
 }
@@ -211,16 +268,25 @@ export function openTurn() {
 }
 
 /**
- * How long the opening frame has been up, or null if there wasn't one — a hard load, or a
- * navigation that never armed. Pure, for the same two reasons `armedTurn` is; `endTurn` is what
- * clears it.
+ * How long the thinking beat has been up, or null if there wasn't one — a hard load, or a
+ * navigation that never armed. Prefers the shared think clock over the overlay's `openedAt`,
+ * so a remount after the overlay has already come off still sees the leftover. Pure, for the
+ * same two reasons `armedTurn` is; `endThink` is what clears the clock, `endTurn` the overlay.
  */
 export function turnElapsed(): number | null {
+  if (thinkStartedAt != null) return performance.now() - thinkStartedAt;
   return live?.openedAt == null ? null : performance.now() - live.openedAt;
 }
 
-/** Done. The next turn starts from nothing. Hides the overlay. */
-export function endTurn() {
+/**
+ * Hide the overlay. Does not end the thinking beat — the destination is still on the dots
+ * and will `endThink` when it actually answers.
+ *
+ * `claim` is the path this page is finishing. A Skills tree that mounts after Projects was
+ * already clicked must not take the overlay off the turn that's now in flight.
+ */
+export function endTurn(claim?: { path: string }) {
+  if (claim && live && live.path !== claim.path) return;
   if (!live && !snapshot) return;
   clearTtl();
   live = null;

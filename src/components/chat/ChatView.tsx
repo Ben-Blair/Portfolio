@@ -32,7 +32,13 @@ import { TypingDots } from "@/components/chat/TypingDots";
 import { useReducedMotion } from "@/components/chat/useReducedMotion";
 import { useTypewriter } from "@/components/chat/useTypewriter";
 import { warmPanel } from "@/components/chat/warm";
-import { armTurn, endTurn, turnElapsed } from "@/components/projects/turnHandoff";
+import {
+  armTurn,
+  beginThink,
+  endThink,
+  endTurn,
+  turnElapsed,
+} from "@/components/projects/turnHandoff";
 import { cn } from "@/lib/utils";
 import { profile } from "@content/profile";
 
@@ -83,41 +89,59 @@ export function ChatView() {
   const [focused, setFocused] = useState(false);
 
   // The written answer's equivalent of waiting on a first token, then clearing the screen for it.
-  // Keyed off the panel so moving pill to pill takes both beats again rather than cutting straight
-  // to the next answer. Which panel reached each milestone, rather than flags plus a reset: a new
-  // panel is simply one neither of these names yet, so switching pills goes back to the dots
-  // without a second render.
+  // Which panel reached each milestone, rather than flags plus a reset: a new panel is simply
+  // one neither of these names yet. Switching pills *during* the think keeps the same beat —
+  // the question updates, the dots do not restart. A pill clicked after this one has started
+  // answering is a new turn and takes both beats again.
   const reduced = useReducedMotion();
   const [left, setLeft] = useState("");
   const [answered, setAnswered] = useState("");
   const exiting = Boolean(panelKey) && left === panelKey;
   const answering = Boolean(panelKey) && answered === panelKey;
+  const needsThink = Boolean(panelKey) && left !== panelKey && answered !== panelKey;
 
   /**
-   * How long the turn has already been on screen in the overlay, or null if it never was — a
-   * hard load of `/chat?panel=…`, or a panel switch that happened in place.
+   * How long the turn has already been on screen (overlay, or a previous mount of this tree),
+   * or null if it never was — a hard load of `/chat?panel=…`.
    *
-   * Read once, at mount: this is the state of the world at the handoff. The leftover is only
-   * for the panel that was arriving when this tree appeared; later pill clicks play the full
-   * beat. Cleared from an effect rather than from this initializer, which React double-invokes
-   * in development.
+   * Read once, at mount: this is the state of the world at the handoff. The leftover applies
+   * to the think already in flight; a later click after this panel has answered starts a new
+   * beat at zero. Cleared from an effect rather than from this initializer, which React
+   * double-invokes in development.
    */
-  const [continued] = useState(turnElapsed);
+  const thinkGen = useRef(0);
+  const [continued] = useState(() => {
+    if (panelKey) thinkGen.current = beginThink();
+    return turnElapsed();
+  });
   const arrivalPanel = useRef(panelKey);
+  const thinkTarget = useRef(panelKey);
+  thinkTarget.current = panelKey;
+
   useEffect(() => {
     if (continued === null) return;
     // After this paint, so the bubble is in the tree before the overlay that was covering
     // the wait comes off. A rAF rather than a timeout: we only need the destination frame,
-    // not an extra beat.
-    const frame = requestAnimationFrame(() => endTurn());
+    // not an extra beat. Claimed as `/chat` so a late mount after Projects was clicked
+    // can't take that overlay off.
+    const frame = requestAnimationFrame(() => endTurn({ path: "/chat" }));
     return () => cancelAnimationFrame(frame);
   }, [continued]);
 
   useEffect(() => {
-    if (!panelKey) return;
-    const leftover = panelKey === arrivalPanel.current && continued !== null ? continued : 0;
+    if (needsThink) thinkGen.current = beginThink();
+  }, [needsThink]);
+
+  useEffect(() => {
+    if (!answering) return;
+    endThink(thinkGen.current);
+  }, [answering]);
+
+  useEffect(() => {
+    if (!needsThink) return;
+    const leftover =
+      thinkTarget.current === arrivalPanel.current && continued !== null ? continued : 0;
     const thinkingMs = reduced ? 0 : Math.max(0, PANEL_THINKING_MS - leftover);
-    const waitForFrame = panelKey === "fun";
 
     let cancelled = false;
     let floorElapsed = false;
@@ -125,8 +149,10 @@ export function ChatView() {
     const tryLeave = () => {
       if (cancelled) return;
       if (!floorElapsed) return;
-      if (waitForFrame && !funFrameReady()) return;
-      setLeft(panelKey);
+      // Fun can be the target now even if the think started on another pill — wait for
+      // its frame the same way a think that began on Fun does.
+      if (thinkTarget.current === "fun" && !funFrameReady()) return;
+      setLeft(thinkTarget.current);
     };
 
     const timer = setTimeout(() => {
@@ -134,22 +160,23 @@ export function ChatView() {
       tryLeave();
     }, thinkingMs);
 
-    const unsub = waitForFrame ? subscribeFunFrame(tryLeave) : undefined;
-    const cap = waitForFrame
-      ? setTimeout(() => {
-          if (cancelled) return;
-          floorElapsed = true;
-          setLeft(panelKey);
-        }, Math.max(thinkingMs, FUN_FRAME_CAP_MS))
-      : undefined;
+    // Subscribe for the whole think, not only when Fun is current: a Skills → Fun hop
+    // mid-beat still has to hear the frame arrive.
+    const unsub = subscribeFunFrame(tryLeave);
+    const cap = setTimeout(() => {
+      if (cancelled) return;
+      floorElapsed = true;
+      setLeft(thinkTarget.current);
+    }, Math.max(thinkingMs, FUN_FRAME_CAP_MS));
 
     return () => {
       cancelled = true;
       clearTimeout(timer);
-      if (cap) clearTimeout(cap);
-      unsub?.();
+      clearTimeout(cap);
+      unsub();
     };
-  }, [panelKey, reduced, continued]);
+    // `needsThink`, not `panelKey`: a pill switch mid-think must not restart this timer.
+  }, [needsThink, reduced, continued]);
 
   useEffect(() => {
     if (!exiting) return;

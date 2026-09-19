@@ -1,4 +1,28 @@
+"use client";
+
+import { useLayoutEffect, useState } from "react";
+
 import { cn } from "@/lib/utils";
+
+/** Must match `.typing-dot` in `globals.css`. */
+const PERIOD_MS = 1400;
+const STAGGER_MS = [0, 160, 320] as const;
+
+/**
+ * When the dots first appeared this session, so a remount can join the same cycle.
+ *
+ * The bubble is drawn in three places that swap for each other — the root overlay, `/projects`'s
+ * loading shell, and the destination page — and on a production navigation those remounts are
+ * far enough apart to see. Restarting the CSS animation at each one is the reset that looks
+ * fine on localhost (the swap is a frame) and wrong on the real site. A negative delay is how
+ * CSS says "this has already been running"; keep one clock and every copy lands on it.
+ */
+let startedAt: number | null = null;
+
+function cycleElapsed() {
+  startedAt ??= performance.now();
+  return (performance.now() - startedAt) % PERIOD_MS;
+}
 
 /**
  * iOS's spinner: the received bubble that says the other person is writing.
@@ -14,20 +38,28 @@ import { cn } from "@/lib/utils";
  * carousel, video and 3D viewer behind it, into the one chunk on the site that has to be tiny.
  */
 export function TypingDots({ leaving = false }: { leaving?: boolean }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  // Before paint, so a remount never flashes the start of the cycle. `useState(0)` matches the
+  // server; this is the client catching up to the shared clock.
+  useLayoutEffect(() => {
+    setElapsed(cycleElapsed());
+  }, []);
+
   return (
     <div
       className={cn(
         "flex w-fit items-center gap-1.5 rounded-3xl rounded-bl-lg bg-neutral-100 px-4 py-3.5",
-        // `translate`, not `transform`: Tailwind's `translate-y-*` sets the standalone property,
-        // and a transition that only names `transform` lets the dots snap down instead of drift.
-        "transition-[opacity,translate] duration-[360ms] ease-out motion-reduce:transition-none",
-        leaving && "translate-y-4 opacity-0",
+        // Transition only on the way out. Switching pills mid-leave used to set `leaving` false
+        // and play the fade *backwards*, which reads as the bubble resetting.
+        leaving &&
+          "translate-y-4 opacity-0 transition-[opacity,translate] duration-[360ms] ease-out motion-reduce:transition-none",
       )}
     >
-      {[0, 160, 320].map((delay) => (
+      {STAGGER_MS.map((delay) => (
         <span
           key={delay}
-          style={{ animationDelay: `${delay}ms` }}
+          style={{ animationDelay: `${delay - elapsed}ms` }}
           className={cn(
             "typing-dot size-2 rounded-full bg-neutral-400",
             leaving && "[animation-play-state:paused]",
