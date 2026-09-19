@@ -32,19 +32,23 @@ export function FunBlock() {
       {/* Pulls up against `ChatView`'s shared `pt-28 sm:pt-32` — that padding clears the fixed
           info button for every panel, but only Fun is a video wanting to sit as high as it can;
           this cancels part of it here rather than shrinking the padding for every other panel. */}
-      <Fade
-        step={0}
-        fadeMs={MEDIA_FADE_MS}
-        liftMs={MEDIA_LIFT_MS}
-        hold={MEDIA_FADE_MS}
-        className="-mt-12 sm:-mt-16"
-      >
+      <div className="-mt-12 sm:-mt-16">
+        {/* Outside `Fade` on purpose: ChatView mounts this block during the thinking beat so the
+            cut can decode while the dots are still up, and `Fade` returns null until its step is
+            reached — which, while the turn is paused, is never. The heading still waits. */}
         <FunVideo src={video.src} poster={video.poster} title={video.title} aspect={video.aspect} />
 
-        <h3 className="mt-4 font-display text-[22px] font-bold tracking-tight text-neutral-900">
-          {title}
-        </h3>
-      </Fade>
+        <Fade
+          step={0}
+          fadeMs={MEDIA_FADE_MS}
+          liftMs={MEDIA_LIFT_MS}
+          hold={MEDIA_FADE_MS}
+        >
+          <h3 className="mt-4 font-display text-[22px] font-bold tracking-tight text-neutral-900">
+            {title}
+          </h3>
+        </Fade>
+      </div>
 
       {/* Blank lines rather than a paragraph each: the answer renderer splits them itself, and
           that's what keeps one run of typing going through the breaks instead of restarting. */}

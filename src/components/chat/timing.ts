@@ -9,12 +9,21 @@
 /**
  * How long a panel sits on the typing dots before it starts answering.
  *
- * A written answer is ready the instant you click, and showing it that way makes the pill feel
- * like a link again — the bubble would be on screen for a single frame. The pause is the model
+ * Long enough to actually read the question in the bubble. A written answer is ready the instant
+ * you click, and showing it that way makes the pill feel like a link again. The pause is the model
  * thinking, except there's no model: it costs nothing and it's what makes the turn read as a
- * reply. Roughly the time to the model's first token on a real question.
+ * reply. Fun can wait longer still — until its first video frame is on screen — so this is a
+ * floor, not a cap. See `ChatView`.
  */
-export const PANEL_THINKING_MS = 420;
+export const PANEL_THINKING_MS = 2000;
+
+/**
+ * How long Fun is allowed to keep thinking while it waits for a decoded video frame.
+ *
+ * The two-second floor is for reading the question. This is the backstop so a stalled cut can't
+ * hold the dots forever — after this the turn leaves whether a frame arrived or not.
+ */
+export const FUN_FRAME_CAP_MS = 15_000;
 
 /**
  * How long the question and the dots take to clear out before the answer starts arriving.

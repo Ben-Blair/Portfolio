@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { markFunFrame, resetFunFrame } from "@/components/chat/funFrame";
 import { cn } from "@/lib/utils";
 
 /**
@@ -39,14 +40,18 @@ export function FunVideo({
     if (!video) return;
 
     let cancelled = false;
+    resetFunFrame();
     const painted = () => {
-      if (!cancelled) setHasFrame(true);
+      if (cancelled) return;
+      setHasFrame(true);
+      markFunFrame();
     };
 
     if (typeof video.requestVideoFrameCallback === "function") {
       const id = video.requestVideoFrameCallback(() => painted());
       return () => {
         cancelled = true;
+        resetFunFrame();
         video.cancelVideoFrameCallback(id);
       };
     }
@@ -59,6 +64,7 @@ export function FunVideo({
     fallback();
     return () => {
       cancelled = true;
+      resetFunFrame();
       video.removeEventListener("loadeddata", fallback);
       video.removeEventListener("playing", fallback);
     };

@@ -68,7 +68,17 @@ function useStep(step: number) {
  * Key this on the panel so moving from one pill to another starts a new script rather than
  * resuming the last one partway through.
  */
-export function PanelAnswer({ children }: { children: React.ReactNode }) {
+export function PanelAnswer({
+  children,
+  paused = false,
+}: {
+  children: React.ReactNode;
+  /**
+   * Hold every step at "not yet". Fun uses this so the video can mount and decode during the
+   * thinking beat without the heading and the typed body playing to an empty room.
+   */
+  paused?: boolean;
+}) {
   const reduced = useReducedMotion();
   const [current, setCurrent] = useState(0);
 
@@ -95,7 +105,7 @@ export function PanelAnswer({ children }: { children: React.ReactNode }) {
       {/* Reduced motion skips the script entirely. The steps gate content, not just movement, so
           leaving them to their timers would hold real words back from someone who asked for less
           animation — the `motion-reduce:` classes can't reach that. */}
-      <CurrentContext.Provider value={reduced ? null : current}>
+      <CurrentContext.Provider value={reduced ? null : paused ? -1 : current}>
         {/* Not `aria-hidden` the way a streamed answer is: a panel is made of links, an email
             address and a résumé button, and hiding them would leave nothing to use. */}
         <div aria-busy={!reduced && !settled}>{children}</div>

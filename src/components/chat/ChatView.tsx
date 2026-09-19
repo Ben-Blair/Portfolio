@@ -18,8 +18,16 @@ import { ErrorLine } from "@/components/chat/ErrorLine";
 import { QuestionBubble } from "@/components/chat/QuestionBubble";
 import { PANELS } from "@/components/chat/blocks/panels";
 import { chatHref, panelHref } from "@/components/chat/href";
+import {
+  funFrameReady,
+  subscribeFunFrame,
+} from "@/components/chat/funFrame";
 import { PanelAnswer } from "@/components/chat/reveal";
-import { PANEL_EXIT_MS, PANEL_THINKING_MS } from "@/components/chat/timing";
+import {
+  FUN_FRAME_CAP_MS,
+  PANEL_EXIT_MS,
+  PANEL_THINKING_MS,
+} from "@/components/chat/timing";
 import { TypingDots } from "@/components/chat/TypingDots";
 import { useReducedMotion } from "@/components/chat/useReducedMotion";
 import { useTypewriter } from "@/components/chat/useTypewriter";
@@ -108,9 +116,43 @@ export function ChatView() {
   useEffect(() => {
     if (!panelKey) return;
     const leftover = panelKey === arrivalPanel.current && continued !== null ? continued : 0;
-    const thinkingMs = Math.max(0, PANEL_THINKING_MS - leftover);
-    const timer = setTimeout(() => setLeft(panelKey), reduced ? 0 : thinkingMs);
-    return () => clearTimeout(timer);
+    const thinkingMs = reduced ? 0 : Math.max(0, PANEL_THINKING_MS - leftover);
+    const waitForFrame = panelKey === "fun";
+
+    let cancelled = false;
+    let floorElapsed = false;
+
+    const tryLeave = () => {
+      if (cancelled) return;
+      if (!floorElapsed) return;
+      if (waitForFrame && !funFrameReady()) return;
+      setLeft(panelKey);
+      // Fun's answer is already in the tree, with a frame. Leaving the dots and then waiting
+      // out the usual exit beat would clear onto white for 360ms — the hole this wait is for.
+      if (waitForFrame) setAnswered(panelKey);
+    };
+
+    const timer = setTimeout(() => {
+      floorElapsed = true;
+      tryLeave();
+    }, thinkingMs);
+
+    const unsub = waitForFrame ? subscribeFunFrame(tryLeave) : undefined;
+    const cap = waitForFrame
+      ? setTimeout(() => {
+          if (cancelled) return;
+          floorElapsed = true;
+          setLeft(panelKey);
+          setAnswered(panelKey);
+        }, Math.max(thinkingMs, FUN_FRAME_CAP_MS))
+      : undefined;
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      if (cap) clearTimeout(cap);
+      unsub?.();
+    };
   }, [panelKey, reduced, continued]);
 
   useEffect(() => {
@@ -119,10 +161,9 @@ export function ChatView() {
     return () => clearTimeout(timer);
   }, [exiting, panelKey, reduced]);
 
-  // Which panel is coming is known the moment this mounts, which is the two timers above — most
-  // of a second — before its block is in the tree at all. Fun's cut is a YouTube embed whose
-  // iframe can't ask for anything until then, so the beat gets spent on the connection instead of
-  // nothing. This is also the path that covers touch, where no hover ever happens, and a link
+  // Which panel is coming is known the moment this mounts. Fun's cut is also mounted during the
+  // thinking beat (hidden, below) so the wait is spent decoding a frame rather than on a blank
+  // page. This is also the path that covers touch, where no hover ever happens, and a link
   // straight to `?panel=fun`, where there's no pill to hover in the first place.
   useEffect(() => {
     if (panelKey) warmPanel(panelKey);
@@ -270,7 +311,7 @@ export function ChatView() {
           {panel ? (
             // The same turn a typed question gets: the question asked, a beat, then an answer
             // that arrives a piece at a time. None of it costs a model call.
-            <div>
+            <div className="relative">
               {/* What was actually typed, when a free-text question matched this panel — falling
                   back to the panel's own wording for an actual pill click, which carries no
                   `query`. See `chatHref`. */}
@@ -281,24 +322,47 @@ export function ChatView() {
                 entrance={continued === null}
               />
 
-              {answering ? (
+              {/* Fun's video has to be in the tree during the thinking beat or the first frame
+                  can't arrive until the dots have already left — which is the white hole this is
+                  covering. Hidden and out of flow so the bubble and the dots still look like
+                  every other panel; `paused` holds the heading and the typed body until the
+                  turn actually answers. Same instance into the answering beat, so the element
+                  that decoded the frame is the one that shows it. */}
+              {panelKey === "fun" && (
+                <div
+                  aria-hidden={!answering}
+                  className={
+                    answering
+                      ? undefined
+                      : "pointer-events-none absolute inset-x-0 top-0 opacity-0"
+                  }
+                >
+                  <PanelAnswer paused={!answering}>
+                    <panel.Block />
+                  </PanelAnswer>
+                </div>
+              )}
+
+              {answering && panelKey !== "fun" ? (
                 <PanelAnswer key={panelKey}>
                   <panel.Block />
                 </PanelAnswer>
               ) : (
-                // The same `1fr → 0fr` close the question is doing above it, so both are out of
-                // the layout by the frame the answer mounts. `min-h-0` rather than
-                // `overflow-hidden`: the dots leave downward, and clipping them to a row that's
-                // shutting would eat the motion that says they left.
-                <div
-                  aria-hidden="true"
-                  className="grid transition-[grid-template-rows] duration-[360ms] ease-in-out motion-reduce:transition-none"
-                  style={{ gridTemplateRows: exiting ? "0fr" : "1fr" }}
-                >
-                  <div className="min-h-0">
-                    <TypingDots leaving={exiting} />
+                !answering && (
+                  // The same `1fr → 0fr` close the question is doing above it, so both are out of
+                  // the layout by the frame the answer mounts. `min-h-0` rather than
+                  // `overflow-hidden`: the dots leave downward, and clipping them to a row that's
+                  // shutting would eat the motion that says they left.
+                  <div
+                    aria-hidden="true"
+                    className="grid transition-[grid-template-rows] duration-[360ms] ease-in-out motion-reduce:transition-none"
+                    style={{ gridTemplateRows: exiting ? "0fr" : "1fr" }}
+                  >
+                    <div className="min-h-0">
+                      <TypingDots leaving={exiting} />
+                    </div>
                   </div>
-                </div>
+                )
               )}
             </div>
           ) : (
