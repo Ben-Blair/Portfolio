@@ -479,6 +479,37 @@
     element survives. The lift curve overshoots nothing and decelerates hard: it should look like
     something settling into place, not like a slide with a stop at the end.
   */
+  /*
+    The thinking-bubble dots. Tailwind's `bounce` is a ball hitting the floor — two eases that
+    kink at the top and the bottom, over a 1s loop, on an 8px circle. That's the stutter. This
+    is one ease the whole way, a longer cycle, and a little opacity so the motion isn't only
+    two pixels of travel. `translate` rather than `transform`, same as the leave animation on
+    the bubble, so the two don't fight.
+  */
+  @keyframes typing-dot {
+    0%,
+    70%,
+    100% {
+      translate: 0 0;
+      opacity: 0.35;
+    }
+    35% {
+      translate: 0 -0.3rem;
+      opacity: 1;
+    }
+  }
+
+  .typing-dot {
+    animation: typing-dot 1.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .typing-dot {
+      animation: none;
+      opacity: 0.7;
+    }
+  }
+
   @keyframes reveal-fade {
     from {
       opacity: 0;

@@ -2,6 +2,7 @@
 
 import { FunVideo } from "@/components/chat/blocks/FunVideo";
 import { Fade, Typed, usePanelPlaying } from "@/components/chat/reveal";
+import { cn } from "@/lib/utils";
 import { profile } from "@content/profile";
 
 /** Long enough for a full-width still to become a picture rather than a rectangle turning on. */
@@ -39,7 +40,24 @@ export function FunBlock() {
           info button for every panel, but only Fun is a video wanting to sit as high as it can;
           this cancels part of it here rather than shrinking the padding for every other panel. */}
       <div className="-mt-12 sm:-mt-16">
-        <FunVideo src={video.src} poster={video.poster} title={video.title} aspect={video.aspect} />
+        {/* The player itself is always mounted so a frame can decode during the thinking beat.
+            The lift waits until `playing` — wrapping the element in `Fade` would unmount it
+            (Fade returns null until its step) and put us back on a white hole. Same numbers
+            as the heading, so the cut and its title arrive as one movement the way the photo
+            and the name do on Me. */}
+        <div
+          className={cn(playing && "reveal-lift")}
+          style={
+            playing
+              ? ({
+                  "--reveal-fade": `${MEDIA_FADE_MS}ms`,
+                  "--reveal-lift": `${MEDIA_LIFT_MS}ms`,
+                } as React.CSSProperties)
+              : undefined
+          }
+        >
+          <FunVideo src={video.src} poster={video.poster} title={video.title} aspect={video.aspect} />
+        </div>
 
         {playing && (
           <Fade

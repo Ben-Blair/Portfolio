@@ -3,9 +3,9 @@ import { cn } from "@/lib/utils";
 /**
  * iOS's spinner: the received bubble that says the other person is writing.
  *
- * `leaving` is the beat where it stops saying that. The bounce is paused rather than removed, so
+ * `leaving` is the beat where it stops saying that. The wave is paused rather than removed, so
  * the dots hold wherever they happened to be instead of snapping level, and the bubble drifts down
- * as it fades — away from the question, which is going up.
+ * as it fades — away from the question, which is going up. See `.typing-dot` in `globals.css`.
  *
  * Its own module rather than living in `Answer` with the rest of the turn, which is where it was.
  * `/projects` now opens its turn inside a `loading.tsx` shell — see `ProjectsTurnFrame` — and that
@@ -24,12 +24,12 @@ export function TypingDots({ leaving = false }: { leaving?: boolean }) {
         leaving && "translate-y-4 opacity-0",
       )}
     >
-      {[0, 160, 320].map((delay) => (
+      {[0, 180, 360].map((delay) => (
         <span
           key={delay}
           style={{ animationDelay: `${delay}ms` }}
           className={cn(
-            "size-2 animate-bounce rounded-full bg-neutral-400 motion-reduce:animate-none",
+            "typing-dot size-2 rounded-full bg-neutral-400",
             leaving && "[animation-play-state:paused]",
           )}
         />
