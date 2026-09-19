@@ -483,6 +483,8 @@
     iMessage's thinking dots: they swell and fade in place, one after another. No vertical
     travel — that's a bounce, and it reads as a different object. `scale` rather than
     `transform`, so the bubble's leave `translate` on the parent isn't overwritten.
+    `both` holds the 0% frame (small, faded) through each stagger delay — without it the
+    second and third dots sit at full size until their animation starts.
   */
   @keyframes typing-dot {
     0%,
@@ -498,7 +500,7 @@
   }
 
   .typing-dot {
-    animation: typing-dot 1.4s ease-in-out infinite;
+    animation: typing-dot 1.4s ease-in-out infinite both;
   }
 
   @media (prefers-reduced-motion: reduce) {

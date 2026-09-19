@@ -15,12 +15,12 @@
  * reply. Fun can wait longer still — until its first video frame is on screen — so this is a
  * floor, not a cap. See `ChatView`.
  */
-export const PANEL_THINKING_MS = 1000;
+export const PANEL_THINKING_MS = 800;
 
 /**
  * How long Fun is allowed to keep thinking while it waits for a decoded video frame.
  *
- * The one-second floor is for reading the question. This is the backstop so a stalled cut can't
+ * The thinking floor is for reading the question. This is the backstop so a stalled cut can't
  * hold the dots forever — after this the turn leaves whether a frame arrived or not.
  */
 export const FUN_FRAME_CAP_MS = 15_000;

@@ -9,19 +9,31 @@ const PERIOD_MS = 1400;
 const STAGGER_MS = [0, 160, 320] as const;
 
 /**
- * When the dots first appeared this session, so a remount can join the same cycle.
+ * When the dots first appeared this think, so a remount can join the same cycle.
  *
  * The bubble is drawn in three places that swap for each other — the root overlay, `/projects`'s
  * loading shell, and the destination page — and on a production navigation those remounts are
  * far enough apart to see. Restarting the CSS animation at each one is the reset that looks
  * fine on localhost (the swap is a frame) and wrong on the real site. A negative delay is how
  * CSS says "this has already been running"; keep one clock and every copy lands on it.
+ *
+ * The clock only lives while at least one copy is mounted. The last unmount clears it, so the
+ * next think starts on the first frame: all three small, then the left one grows.
  */
 let startedAt: number | null = null;
+let mounted = 0;
 
-function cycleElapsed() {
-  startedAt ??= performance.now();
-  return (performance.now() - startedAt) % PERIOD_MS;
+function retainClock() {
+  if (mounted++ === 0) startedAt = performance.now();
+  return (performance.now() - (startedAt ?? performance.now())) % PERIOD_MS;
+}
+
+function releaseClock() {
+  mounted -= 1;
+  if (mounted <= 0) {
+    mounted = 0;
+    startedAt = null;
+  }
 }
 
 /**
@@ -41,9 +53,11 @@ export function TypingDots({ leaving = false }: { leaving?: boolean }) {
   const [elapsed, setElapsed] = useState(0);
 
   // Before paint, so a remount never flashes the start of the cycle. `useState(0)` matches the
-  // server; this is the client catching up to the shared clock.
+  // server; this is the client catching up to the shared clock. Release on unmount so a later
+  // think starts from the first frame instead of wherever this one left off.
   useLayoutEffect(() => {
-    setElapsed(cycleElapsed());
+    setElapsed(retainClock());
+    return releaseClock;
   }, []);
 
   return (
