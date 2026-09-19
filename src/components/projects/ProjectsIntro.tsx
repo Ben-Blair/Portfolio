@@ -68,8 +68,8 @@ export function ProjectsIntro({
    * The thinking beat, less whatever the loading shell already spent of it.
    *
    * The dots have been bouncing since the click, and the wait they were covering *was* the fetch.
-   * Serving the full two seconds again on top would charge a slow connection for the beat twice,
-   * which is the opposite of what opening early was for. So the turn takes `max(2s, however long
+   * Serving the full second again on top would charge a slow connection for the beat twice,
+   * which is the opposite of what opening early was for. So the turn takes `max(1s, however long
    * the page took)` before it starts leaving: never shorter than it reads on a fast connection,
    * never padded on a slow one.
    */

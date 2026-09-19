@@ -55,12 +55,24 @@ export function useTypewriter(
   const seenRef = useRef("");
   const deadlineRef = useRef<number | null>(null);
 
+  const wasActive = useRef(false);
+
   useEffect(() => {
-    if (!active || reduced) return;
+    if (!active || reduced) {
+      wasActive.current = false;
+      countRef.current = 0;
+      carryRef.current = 0;
+      deadlineRef.current = null;
+      return;
+    }
 
     // A stream only ever appends. Anything else is a different answer, so don't type it from
-    // whatever position the last one happened to reach.
-    if (!text.startsWith(seenRef.current)) {
+    // whatever position the last one happened to reach. Same reset when typing *starts*: a
+    // written panel's body can sit inactive until its step is reached, and the grace period
+    // must begin then, not when the component first mounted.
+    const justBegan = !wasActive.current;
+    wasActive.current = true;
+    if (justBegan || !text.startsWith(seenRef.current)) {
       countRef.current = 0;
       carryRef.current = 0;
       deadlineRef.current = null;

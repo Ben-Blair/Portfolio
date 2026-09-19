@@ -57,9 +57,24 @@ function useStep(step: number) {
   const advance = useContext(AdvanceContext);
 
   const finish = useCallback(() => advance(step), [advance, step]);
-  const reached = current === null || current >= step;
+  // Negative is "paused", not "before step 0": Fun mounts during the thinking beat so its
+  // video can decode, and without this the heading and the typed body would play to an
+  // opacity-0 room and be finished by the time the dots left.
+  const reached = current === null || (current >= 0 && current >= step);
 
   return { reached, finish };
+}
+
+/**
+ * Whether a panel's script is allowed to play.
+ *
+ * False while ChatView is still on the thinking dots. Fun uses this to keep the heading and the
+ * typed body out of the tree until the turn actually answers, so they can't finish behind the
+ * dots and then land already written.
+ */
+export function usePanelPlaying() {
+  const current = useContext(CurrentContext);
+  return current === null || current >= 0;
 }
 
 /**

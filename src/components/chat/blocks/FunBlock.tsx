@@ -1,5 +1,7 @@
+"use client";
+
 import { FunVideo } from "@/components/chat/blocks/FunVideo";
-import { Fade, Typed } from "@/components/chat/reveal";
+import { Fade, Typed, usePanelPlaying } from "@/components/chat/reveal";
 import { profile } from "@content/profile";
 
 /** Long enough for a full-width still to become a picture rather than a rectangle turning on. */
@@ -26,6 +28,10 @@ const MEDIA_LIFT_MS = 760;
  */
 export function FunBlock() {
   const { title, body, video } = profile.fun;
+  // The video has to mount during the thinking beat so a frame is ready when the dots leave.
+  // The heading and the typed body do not — if they sit in the tree that whole time they play
+  // themselves out behind the overlay and land already written.
+  const playing = usePanelPlaying();
 
   return (
     <div>
@@ -33,28 +39,29 @@ export function FunBlock() {
           info button for every panel, but only Fun is a video wanting to sit as high as it can;
           this cancels part of it here rather than shrinking the padding for every other panel. */}
       <div className="-mt-12 sm:-mt-16">
-        {/* Outside `Fade` on purpose: ChatView mounts this block during the thinking beat so the
-            cut can decode while the dots are still up, and `Fade` returns null until its step is
-            reached — which, while the turn is paused, is never. The heading still waits. */}
         <FunVideo src={video.src} poster={video.poster} title={video.title} aspect={video.aspect} />
 
-        <Fade
-          step={0}
-          fadeMs={MEDIA_FADE_MS}
-          liftMs={MEDIA_LIFT_MS}
-          hold={MEDIA_FADE_MS}
-        >
-          <h3 className="mt-4 font-display text-[22px] font-bold tracking-tight text-neutral-900">
-            {title}
-          </h3>
-        </Fade>
+        {playing && (
+          <Fade
+            step={0}
+            fadeMs={MEDIA_FADE_MS}
+            liftMs={MEDIA_LIFT_MS}
+            hold={MEDIA_FADE_MS}
+          >
+            <h3 className="mt-4 font-display text-[22px] font-bold tracking-tight text-neutral-900">
+              {title}
+            </h3>
+          </Fade>
+        )}
       </div>
 
       {/* Blank lines rather than a paragraph each: the answer renderer splits them itself, and
           that's what keeps one run of typing going through the breaks instead of restarting. */}
-      <div className="mt-6">
-        <Typed step={1} text={body.join("\n\n")} />
-      </div>
+      {playing && (
+        <div className="mt-6">
+          <Typed step={1} text={body.join("\n\n")} />
+        </div>
+      )}
     </div>
   );
 }
