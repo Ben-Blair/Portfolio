@@ -127,9 +127,6 @@ export function ChatView() {
       if (!floorElapsed) return;
       if (waitForFrame && !funFrameReady()) return;
       setLeft(panelKey);
-      // Fun's answer is already in the tree, with a frame. Leaving the dots and then waiting
-      // out the usual exit beat would clear onto white for 360ms — the hole this wait is for.
-      if (waitForFrame) setAnswered(panelKey);
     };
 
     const timer = setTimeout(() => {
@@ -143,7 +140,6 @@ export function ChatView() {
           if (cancelled) return;
           floorElapsed = true;
           setLeft(panelKey);
-          setAnswered(panelKey);
         }, Math.max(thinkingMs, FUN_FRAME_CAP_MS))
       : undefined;
 

@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 /**
  * iOS's spinner: the received bubble that says the other person is writing.
  *
- * `leaving` is the beat where it stops saying that. The wave is paused rather than removed, so
+ * `leaving` is the beat where it stops saying that. The pulse is paused rather than removed, so
  * the dots hold wherever they happened to be instead of snapping level, and the bubble drifts down
  * as it fades — away from the question, which is going up. See `.typing-dot` in `globals.css`.
  *
@@ -24,7 +24,7 @@ export function TypingDots({ leaving = false }: { leaving?: boolean }) {
         leaving && "translate-y-4 opacity-0",
       )}
     >
-      {[0, 180, 360].map((delay) => (
+      {[0, 160, 320].map((delay) => (
         <span
           key={delay}
           style={{ animationDelay: `${delay}ms` }}
