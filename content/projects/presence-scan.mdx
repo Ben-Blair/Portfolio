@@ -39,12 +39,12 @@ The viewer connects straight to that socket, maps sensor space onto splat space 
 origin/rotation/scale calibration, and eases an avatar toward wherever you're actually
 standing in the room. Up to three people track as three independent avatars.
 
-## Wall cutaway
+## Demo mode
 
-Splats don't have geometry to hide behind, so a full walkthrough of a garage from outside would
-just show you the outside of the walls. A custom shader chunk fades walls between the camera and
-the avatar whenever the camera leaves the room, so tracking a person from any angle still reads as
-looking *into* a space rather than at a box.
+With no one in the room, an avatar walks the garage on its own. It reads the walls and furniture
+straight out of the scan — a floor grid built from the splats themselves, so obstacles match what
+you actually see — then plans a path around them with A\* and rounds the corners so it moves in
+smooth curves instead of walking through objects.
 
 ## Calibrating a real radar to a real room
 
