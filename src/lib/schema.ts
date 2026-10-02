@@ -137,6 +137,23 @@ const splatMedia = z.object({
 });
 
 /**
+ * A CAD model cut in half down its long axis, with the camera flown by the page scroll.
+ *
+ * `src` is a `.glb` with one mesh per material class, laid out with the long axis on X and the
+ * nose toward +X; everything on the +Z side of the XY plane is cut away. The section faces are
+ * drawn by the viewer, so the file needs nothing but closed solids. How the move *feels* lives
+ * in `CUTAWAY_CONFIG` (`src/components/media/CutawayBlock.tsx`), not here.
+ */
+const cutawayMedia = z.object({
+  ...base,
+  type: z.literal("cutaway"),
+  src: z.string(),
+  /** Shown while the model downloads, and as the no-WebGL fallback. */
+  poster: z.string().optional(),
+  alt: z.string().default(""),
+});
+
+/**
  * Exported so the dev tuner can derive the defaults it compares against when deciding which
  * values are worth writing into frontmatter. Reading them off the schema means that list can
  * never drift from the schema itself.
@@ -151,6 +168,7 @@ export const mediaSchema = z.discriminatedUnion("type", [
   youtubeMedia,
   livePhotoMedia,
   splatMedia,
+  cutawayMedia,
 ]);
 
 export const linkSchema = z.object({

@@ -22,6 +22,17 @@ const SplatBlock = dynamic(
   },
 );
 
+/** three.js and a CAD model of a megabyte or so — the same reasoning as the splat viewer. */
+const CutawayBlock = dynamic(
+  () => import("@/components/media/CutawayBlock").then((m) => m.CutawayBlock),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="aspect-[16/10] w-full animate-pulse rounded-2xl border border-neutral-200 bg-neutral-100" />
+    ),
+  },
+);
+
 /** Renders children only once they've come within `rootMargin` of the viewport. */
 function WhenNear({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -78,6 +89,12 @@ export function MediaBlock({ media }: { media: Media }) {
       return (
         <WhenNear>
           <SplatBlock {...media} />
+        </WhenNear>
+      );
+    case "cutaway":
+      return (
+        <WhenNear>
+          <CutawayBlock {...media} />
         </WhenNear>
       );
   }

@@ -43,6 +43,7 @@ function mediaKey(media: Media): string {
     case "video":
     case "livephoto":
     case "splat":
+    case "cutaway":
       return slugifyKey(path.basename(media.src, path.extname(media.src)));
     case "youtube":
       return "youtube";
@@ -144,9 +145,9 @@ function literal(source: string): string | number | boolean | undefined {
 /**
  * Every media item the chat may cite, in project order.
  *
- * Splats are excluded: `SplatBlock` pulls in three.js and Spark, and its camera is driven by the
- * page scroll, neither of which belongs in an answer that's still being typed. Every project with
- * a splat has a flat image alongside it. `heroOnly` items are excluded for the reason the project
+ * Splats and cutaways are excluded: both pull in three.js and fly their camera off the page scroll,
+ * neither of which belongs in an answer that's still being typed. Every project with one has a
+ * flat image alongside it. `heroOnly` items are excluded for the reason the project
  * page skips them too (`schema.ts`) — they front the projects list, and nothing else.
  */
 export const getChatMedia = cache((): ChatMediaEntry[] => {
@@ -156,7 +157,7 @@ export const getChatMedia = cache((): ChatMediaEntry[] => {
     const used = new Map<string, number>();
 
     for (const media of [...project.media, ...inlineMedia(project.body)]) {
-      if (media.type === "splat" || media.heroOnly) continue;
+      if (media.type === "splat" || media.type === "cutaway" || media.heroOnly) continue;
 
       const key = mediaKey(media);
       const count = (used.get(key) ?? 0) + 1;
