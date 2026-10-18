@@ -12,7 +12,7 @@ export const resume = {
   /** Filename the browser saves as. */
   downloadAs: "Benjamin_Blair_Resume.pdf",
   /** Shown as "Updated <this>" — bump it when you swap the PDF. */
-  updated: "July 2026",
+  updated: "October 2026",
 
   /** Short enough to sit on one line under a heading, and in a chip. */
   headline: "CS @ CU Boulder, Class of 2027",
@@ -41,15 +41,32 @@ export const resume = {
         "Calculus I–II",
         "Discrete Mathematics",
         "Physics I–II",
+        "Object-Oriented Analysis and Design",
+        "Intro to Cybersecurity",
       ],
     },
   ],
 
   experience: [
     {
+      role: "Founder, Product Manager & Technical Lead",
+      org: "HiveAI — Defense Technology Startup & Senior Capstone Project",
+      /** Empty rather than absent: every entry carries the same keys, so `entry.href` typechecks. */
+      href: "",
+      start: "September 2026",
+      end: "Present",
+      bullets: [
+        "Founded HiveAI and lead its 4-engineer team; the only student of 45 in the senior capstone cohort whose original concept was approved and staffed (all other projects were sponsor-proposed).",
+        "Multi-camera platform for military and law-enforcement after-action review: combines unsynchronized body-worn, weapon-mounted, handheld, fixed, and drone footage into a single 3D replay of the engagement, viewable from any angle.",
+        "GPS-independent localization: recovers every camera's position and heading, and so every operator's, by structure-from-motion over the footage itself, then reconstructs the site as a photorealistic 3D Gaussian-splat model without a pre-surveyed map.",
+        "Sub-frame time sync: aligns all sources to one clock within a single video frame (33ms) via GCC-PHAT audio cross-correlation and a weighted least-squares solve across every camera pair.",
+        "Cross-camera tracking: detects people (YOLO, SAM), triangulates anyone seen by multiple cameras, and keeps identities consistent through occlusions with a global offline solver rather than frame-by-frame guessing.",
+        "Evidentiary integrity: SHA-256 chain of custody on all source footage and an error bound on every position; areas no camera captured are filled by a diffusion model and visibly marked as AI-generated, and uncertain identity matches go to an analyst instead of being auto-resolved.",
+      ],
+    },
+    {
       role: "Full-Stack Software Engineer Intern",
       org: "Niguel Point Property Management",
-      /** Empty rather than absent: every entry carries the same keys, so `entry.href` typechecks. */
       href: "",
       /** No `end` — the PDF dates this one "Summer 2026", not as a range. */
       start: "Summer 2026",
@@ -61,16 +78,6 @@ export const resume = {
         "Designed a serverless cloud execution model running the scraping pipeline in an ephemeral Vercel Sandbox (Firecracker microVM), dispatched detached and reporting results through a token-authenticated async HTTP callback.",
         "Implemented AES-256-GCM encrypted credential storage, TOTP-based automated 2FA re-login with self-refreshing session cookies, and dual-factor callback authentication.",
         "Instrumented run metrics and structured logs to monitor pipeline health, triage failures, and root-cause scraper breakages; shipped behind Vitest suites, Husky/lint-staged pre-commit hooks, and GitHub Actions CI.",
-      ],
-    },
-    {
-      role: "Founder",
-      org: "Jesus Club CU",
-      href: "https://jesusclubcu.com",
-      start: "2024",
-      end: "Present",
-      bullets: [
-        "Founded and run a student club at CU Boulder, including building and maintaining its website.",
       ],
     },
   ],
@@ -103,6 +110,13 @@ export const resume = {
   /** Activities, leadership, and certifications — the parts of the PDF that aren't jobs. */
   activities: [
     {
+      name: "CU Boulder Design/Build/Fly (AIAA DBF)",
+      org: "Avionics Team — Firmware & Telemetry",
+      when: "August 2026 – Present",
+      detail:
+        "Develop firmware and telemetry systems for an unmanned, remote-controlled aircraft built for the AIAA Design/Build/Fly intercollegiate competition, supporting systems integration and flight testing.",
+    },
+    {
       name: "Level 1 High-Power Rocketry Certification",
       org: "Tripoli Rocketry Association",
       when: "Summer 2026",
@@ -131,11 +145,37 @@ export const resume = {
       items: [
         "Data structures",
         "Search & pathfinding",
+        "Multi-camera geometry & triangulation",
+        "Structure-from-motion",
+        "Audio cross-correlation time sync",
         "Real-time signal filtering",
         "Embedded firmware (ESP32/PlatformIO)",
         "Raspberry Pi",
         "mmWave radar over UART",
         "WebSockets",
+      ],
+    },
+    {
+      group: "ML & Computer Vision",
+      items: [
+        "PyTorch",
+        "TensorFlow/TFLite",
+        "OpenCV",
+        "YOLO",
+        "SAM",
+        "scikit-learn",
+        "NumPy",
+        "Pandas",
+      ],
+    },
+    {
+      group: "Graphics & Sensing",
+      items: [
+        "WebGL/WebGPU",
+        "GLSL/WGSL",
+        "PlayCanvas",
+        "3D Gaussian Splatting",
+        "COLMAP photogrammetry",
       ],
     },
     {
@@ -159,25 +199,13 @@ export const resume = {
       items: [
         "Vercel serverless / Firecracker microVMs",
         "Docker",
+        "CUDA cloud GPUs",
         "GitHub Actions CI/CD",
         "Git",
         "Playwright",
         "Vitest",
+        "pytest",
         "FFmpeg",
-      ],
-    },
-    {
-      group: "ML & Computer Vision",
-      items: ["PyTorch", "TensorFlow/TFLite", "OpenCV", "scikit-learn", "NumPy", "Pandas"],
-    },
-    {
-      group: "Graphics & Sensing",
-      items: [
-        "WebGL/WebGPU",
-        "GLSL/WGSL",
-        "PlayCanvas",
-        "3D Gaussian Splatting",
-        "COLMAP photogrammetry",
       ],
     },
   ],
